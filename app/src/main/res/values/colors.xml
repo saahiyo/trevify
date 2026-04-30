@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="blue">#4D28FF</color> <!-- More vibrant primary blue -->
+    <color name="blue_light">#EEF0FF</color>
+    <color name="accent_vibrant">#FF2E6B</color> <!-- New vibrant accent color -->
+    <color name="background_light">#F8F9FF</color> <!-- Slight blue tint to background -->
+    <color name="surface_variant">#F1F3FB</color>
+    <color name="text_primary">#0A0B1E</color> <!-- Deeper dark for better contrast -->
+    <color name="text_secondary">#4D516F</color>
+    <color name="text_tertiary">#8A8EA8</color>
+    <color name="divider">#E1E4F2</color>
+    <color name="glass_bg">#DDFFFFFF</color>
+</resources>
