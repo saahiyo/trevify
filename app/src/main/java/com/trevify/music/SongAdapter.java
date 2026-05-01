@@ -1,5 +1,8 @@
 package com.trevify.music;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.net.Uri;
@@ -62,6 +65,10 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         return songs;
     }
 
+    public void refreshFavoriteStates() {
+        notifyDataSetChanged();
+    }
+
     public void setPlayingSong(Song song) {
         Song oldPlayingSong = this.playingSong;
         this.playingSong = song;
@@ -112,12 +119,13 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
                 .placeholder(R.drawable.placeholder_img)
                 .error(R.drawable.placeholder_img)
                 .into(holder.binding.imageAlbumArt);
-        // Highlight currently playing song
-        if (playingSong != null && playingSong.getStableKey().equals(song.getStableKey())) {
+        boolean isCurrentSong = playingSong != null && playingSong.getStableKey().equals(song.getStableKey());
+        if (isCurrentSong) {
             holder.binding.textTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.blue));
         } else {
             holder.binding.textTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.text_primary));
         }
+        updateEqualizer(holder, isCurrentSong);
 
         // Show favorite state
         updateFavIcon(holder, song);
@@ -203,6 +211,12 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         setAnimation(holder.binding.getRoot(), position);
     }
 
+    @Override
+    public void onViewRecycled(@NonNull SongViewholder holder) {
+        stopEqualizer(holder);
+        super.onViewRecycled(holder);
+    }
+
     private void setAnimation(View view, int position) {
         if (position > lastPosition) {
             view.setAlpha(0f);
@@ -215,6 +229,50 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
                     .start();
             lastPosition = position;
         }
+    }
+
+    private void updateEqualizer(SongViewholder holder, boolean isPlaying) {
+        if (isPlaying) {
+            holder.binding.playingEqualizer.setVisibility(View.VISIBLE);
+            startEqualizer(holder);
+        } else {
+            stopEqualizer(holder);
+            holder.binding.playingEqualizer.setVisibility(View.GONE);
+        }
+    }
+
+    private void startEqualizer(SongViewholder holder) {
+        if (holder.binding.playingEqualizer.getTag() instanceof AnimatorSet) return;
+
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(
+                createBarAnimator(holder.binding.equalizerBar1, 320, 0),
+                createBarAnimator(holder.binding.equalizerBar2, 420, 120),
+                createBarAnimator(holder.binding.equalizerBar3, 360, 70)
+        );
+        holder.binding.playingEqualizer.setTag(animatorSet);
+        animatorSet.start();
+    }
+
+    private ObjectAnimator createBarAnimator(View bar, long duration, long delay) {
+        bar.setPivotY(bar.getHeight());
+        ObjectAnimator animator = ObjectAnimator.ofFloat(bar, View.SCALE_Y, 0.35f, 1f);
+        animator.setDuration(duration);
+        animator.setStartDelay(delay);
+        animator.setRepeatCount(ValueAnimator.INFINITE);
+        animator.setRepeatMode(ValueAnimator.REVERSE);
+        return animator;
+    }
+
+    private void stopEqualizer(SongViewholder holder) {
+        Object animator = holder.binding.playingEqualizer.getTag();
+        if (animator instanceof AnimatorSet) {
+            ((AnimatorSet) animator).cancel();
+            holder.binding.playingEqualizer.setTag(null);
+        }
+        holder.binding.equalizerBar1.setScaleY(1f);
+        holder.binding.equalizerBar2.setScaleY(1f);
+        holder.binding.equalizerBar3.setScaleY(1f);
     }
 
     private void updateFavIcon(SongViewholder holder, Song song) {

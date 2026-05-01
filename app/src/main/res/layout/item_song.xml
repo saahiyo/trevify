@@ -32,11 +32,44 @@
             tools:srcCompat="@tools:sample/avatars" />
     </com.google.android.material.card.MaterialCardView>
 
+    <LinearLayout
+        android:id="@+id/playingEqualizer"
+        android:layout_width="16dp"
+        android:layout_height="18dp"
+        android:layout_marginStart="14dp"
+        android:gravity="bottom"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/cardArt"
+        app:layout_constraintStart_toEndOf="@+id/cardArt"
+        app:layout_constraintTop_toTopOf="@+id/cardArt">
+
+        <View
+            android:id="@+id/equalizerBar1"
+            android:layout_width="3dp"
+            android:layout_height="10dp"
+            android:background="@color/blue" />
+
+        <View
+            android:id="@+id/equalizerBar2"
+            android:layout_width="3dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="3dp"
+            android:background="@color/blue" />
+
+        <View
+            android:id="@+id/equalizerBar3"
+            android:layout_width="3dp"
+            android:layout_height="12dp"
+            android:layout_marginStart="3dp"
+            android:background="@color/blue" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/textTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="10dp"
         android:text="Song Title"
         android:maxLines="1"
         android:ellipsize="end"
@@ -47,7 +80,7 @@
         android:layout_marginEnd="16dp"
         app:layout_constraintBottom_toTopOf="@+id/textArtist"
         app:layout_constraintEnd_toStartOf="@+id/favIcon"
-        app:layout_constraintStart_toEndOf="@+id/cardArt"
+        app:layout_constraintStart_toEndOf="@+id/playingEqualizer"
         app:layout_constraintTop_toTopOf="@+id/cardArt"
         app:layout_constraintVertical_chainStyle="packed" />
 

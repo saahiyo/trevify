@@ -61,7 +61,7 @@ public class FavoritesActivity extends AppCompatActivity implements SongAdapter.
         FavoritesManager favManager = FavoritesManager.getInstance(this);
         favoriteSongs.clear();
         for (Song song : allSongs) {
-            if (favManager.isFavorite(song.id)) {
+            if (favManager.isFavorite(song)) {
                 favoriteSongs.add(song);
             }
         }

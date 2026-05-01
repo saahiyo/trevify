@@ -1,6 +1,10 @@
 package com.trevify.music;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -32,6 +36,10 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
 
     public SaavnTrack getTrack(int position) {
         return tracks.get(position);
+    }
+
+    public void refreshFavoriteStates() {
+        notifyDataSetChanged();
     }
 
     public void setPlayingSong(Song song) {
@@ -70,12 +78,13 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SaavnTrack track = tracks.get(position);
         
-        // Highlight currently playing song
-        if (playingSong != null && playingSong.isOnline && track.id.equals(playingSong.sourceId)) {
+        boolean isCurrentTrack = playingSong != null && playingSong.isOnline && track.id.equals(playingSong.sourceId);
+        if (isCurrentTrack) {
             holder.binding.onlineTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.blue));
         } else {
             holder.binding.onlineTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.text_primary));
         }
+        updateEqualizer(holder, isCurrentTrack);
         
         holder.binding.onlineTitle.setText(android.text.Html.fromHtml(track.name, android.text.Html.FROM_HTML_MODE_LEGACY).toString());
         String decodedArtist = android.text.Html.fromHtml(track.artist, android.text.Html.FROM_HTML_MODE_LEGACY).toString();
@@ -171,12 +180,62 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
     }
 
     @Override
+    public void onViewRecycled(@NonNull ViewHolder holder) {
+        stopEqualizer(holder);
+        super.onViewRecycled(holder);
+    }
+
+    @Override
     public int getItemCount() {
         return tracks.size();
     }
 
     private String formatTime(int seconds) {
         return String.format("%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    private void updateEqualizer(ViewHolder holder, boolean isPlaying) {
+        if (isPlaying) {
+            holder.binding.playingEqualizer.setVisibility(View.VISIBLE);
+            startEqualizer(holder);
+        } else {
+            stopEqualizer(holder);
+            holder.binding.playingEqualizer.setVisibility(View.GONE);
+        }
+    }
+
+    private void startEqualizer(ViewHolder holder) {
+        if (holder.binding.playingEqualizer.getTag() instanceof AnimatorSet) return;
+
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(
+                createBarAnimator(holder.binding.equalizerBar1, 320, 0),
+                createBarAnimator(holder.binding.equalizerBar2, 420, 120),
+                createBarAnimator(holder.binding.equalizerBar3, 360, 70)
+        );
+        holder.binding.playingEqualizer.setTag(animatorSet);
+        animatorSet.start();
+    }
+
+    private ObjectAnimator createBarAnimator(View bar, long duration, long delay) {
+        bar.setPivotY(bar.getHeight());
+        ObjectAnimator animator = ObjectAnimator.ofFloat(bar, View.SCALE_Y, 0.35f, 1f);
+        animator.setDuration(duration);
+        animator.setStartDelay(delay);
+        animator.setRepeatCount(ValueAnimator.INFINITE);
+        animator.setRepeatMode(ValueAnimator.REVERSE);
+        return animator;
+    }
+
+    private void stopEqualizer(ViewHolder holder) {
+        Object animator = holder.binding.playingEqualizer.getTag();
+        if (animator instanceof AnimatorSet) {
+            ((AnimatorSet) animator).cancel();
+            holder.binding.playingEqualizer.setTag(null);
+        }
+        holder.binding.equalizerBar1.setScaleY(1f);
+        holder.binding.equalizerBar2.setScaleY(1f);
+        holder.binding.equalizerBar3.setScaleY(1f);
     }
 
     private void updateFavIcon(ViewHolder holder, SaavnTrack track) {

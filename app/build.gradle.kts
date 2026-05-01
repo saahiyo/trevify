@@ -56,4 +56,7 @@ dependencies {
     implementation ("com.github.alexei-frolo:WaveformSeekBar:1.1")
     implementation ("jp.wasabeef:glide-transformations:4.3.0")
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("androidx.room:room-runtime:2.6.1")
+    annotationProcessor ("androidx.room:room-compiler:2.6.1")
+    implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }

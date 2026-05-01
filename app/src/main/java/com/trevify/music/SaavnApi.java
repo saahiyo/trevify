@@ -1,5 +1,6 @@
 package com.trevify.music;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -9,6 +10,9 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -20,6 +24,7 @@ public class SaavnApi {
     private static final String BASE_URL = "https://jiosaavn-api.shakir-ansarii075.workers.dev/api";
     private static final OkHttpClient client = new OkHttpClient();
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private static final ExecutorService cacheExecutor = Executors.newSingleThreadExecutor();
 
     public interface SearchCallback {
         void onSuccess(List<SaavnTrack> tracks);
@@ -27,6 +32,33 @@ public class SaavnApi {
     }
 
     public static void searchSongs(String query, int limit, SearchCallback callback) {
+        fetchSongsFromNetwork(query, limit, null, callback);
+    }
+
+    public static void searchSongs(Context context, String query, int limit, boolean forceRefresh, SearchCallback callback) {
+        String normalizedQuery = normalizeQuery(query);
+        String cacheKey = buildCacheKey(normalizedQuery, limit);
+
+        cacheExecutor.execute(() -> {
+            SearchCacheDao dao = AppDatabase.getInstance(context).searchCacheDao();
+            if (!forceRefresh) {
+                CachedSearchResponse cached = dao.getByKey(cacheKey);
+                if (cached != null && cached.responseJson != null && !cached.responseJson.isEmpty()) {
+                    try {
+                        List<SaavnTrack> cachedTracks = parseSearchResponse(cached.responseJson);
+                        mainHandler.post(() -> callback.onSuccess(cachedTracks));
+                        return;
+                    } catch (Exception ignored) {
+                        // Fall through to network if a stored response can no longer be parsed.
+                    }
+                }
+            }
+
+            fetchSongsFromNetwork(normalizedQuery, limit, dao, callback);
+        });
+    }
+
+    private static void fetchSongsFromNetwork(String query, int limit, SearchCacheDao cacheDao, SearchCallback callback) {
         String url = BASE_URL + "/search/songs?query=" + java.net.URLEncoder.encode(query) + "&limit=" + limit;
 
         Request request = new Request.Builder().url(url).build();
@@ -47,24 +79,18 @@ public class SaavnApi {
                         return;
                     }
 
-                    JSONObject json = new JSONObject(body);
-                    if (!json.optBoolean("success", false)) {
-                        mainHandler.post(() -> callback.onError(json.optString("message", "API Error")));
-                        return;
+                    List<SaavnTrack> tracks = parseSearchResponse(body);
+                    if (cacheDao != null) {
+                        String normalizedQuery = normalizeQuery(query);
+                        String responseJson = body;
+                        cacheExecutor.execute(() -> cacheDao.upsert(new CachedSearchResponse(
+                                buildCacheKey(normalizedQuery, limit),
+                                normalizedQuery,
+                                limit,
+                                responseJson,
+                                System.currentTimeMillis()
+                        )));
                     }
-
-                    List<SaavnTrack> tracks = new ArrayList<>();
-                    JSONObject data = json.optJSONObject("data");
-                    if (data != null) {
-                        JSONArray results = data.optJSONArray("results");
-                        if (results != null) {
-                            for (int i = 0; i < results.length(); i++) {
-                                JSONObject item = results.getJSONObject(i);
-                                tracks.add(parseTrack(item));
-                            }
-                        }
-                    }
-
                     mainHandler.post(() -> callback.onSuccess(tracks));
                 } catch (Exception e) {
                     String finalBody = body;
@@ -72,6 +98,35 @@ public class SaavnApi {
                 }
             }
         });
+    }
+
+    private static List<SaavnTrack> parseSearchResponse(String body) throws Exception {
+        JSONObject json = new JSONObject(body);
+        if (!json.optBoolean("success", false)) {
+            throw new IllegalStateException(json.optString("message", "API Error"));
+        }
+
+        List<SaavnTrack> tracks = new ArrayList<>();
+        JSONObject data = json.optJSONObject("data");
+        if (data != null) {
+            JSONArray results = data.optJSONArray("results");
+            if (results != null) {
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject item = results.getJSONObject(i);
+                    tracks.add(parseTrack(item));
+                }
+            }
+        }
+        return tracks;
+    }
+
+    private static String buildCacheKey(String query, int limit) {
+        return query + "|" + limit;
+    }
+
+    private static String normalizeQuery(String query) {
+        if (query == null) return "";
+        return query.trim().toLowerCase(Locale.US);
     }
 
     private static SaavnTrack parseTrack(JSONObject item) {
