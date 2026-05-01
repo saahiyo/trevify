@@ -171,8 +171,18 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             public void afterTextChanged(Editable s) {}
         });
         
-        // Initial fetch for explore
-        performOnlineSearch("trending");
+        // Initial fetch for explore with diverse high-quality queries
+        String[] defaultQueries = {
+            "top songs 2024", 
+            "bollywood hits", 
+            "lofi mashup", 
+            "viral hits", 
+            "latest hindi", 
+            "punjabi hits",
+            "global top 50"
+        };
+        String randomQuery = defaultQueries[new java.util.Random().nextInt(defaultQueries.length)];
+        performOnlineSearch(randomQuery);
     }
 
     private void performOnlineSearch(String query) {
