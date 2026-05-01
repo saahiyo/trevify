@@ -37,6 +37,14 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private List<Song> songList;
     private MusicPlayerManager playerManager;
     private String currentExploreQuery = "";
+    
+    private android.view.View exploreContainer;
+    private android.view.View libraryContainer;
+    private RecyclerView recyclerViewSpotify;
+    private RecyclerView recyclerViewSongs;
+    private android.widget.ProgressBar exploreLoading;
+    private android.widget.TextView exploreHint;
+    private android.widget.LinearLayout emptyState;
 
     private final ActivityResultLauncher<String[]> requestPermissionsLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), results -> {
@@ -77,10 +85,21 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             return insets;
         });
 
+        exploreContainer = getLayoutInflater().inflate(R.layout.layout_explore, null);
+        libraryContainer = getLayoutInflater().inflate(R.layout.layout_library, null);
+        exploreContainer.setLayoutParams(new android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        libraryContainer.setLayoutParams(new android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        
+        exploreLoading = exploreContainer.findViewById(R.id.exploreLoading);
+        exploreHint = exploreContainer.findViewById(R.id.exploreHint);
+        recyclerViewSpotify = exploreContainer.findViewById(R.id.recyclerViewSpotify);
+        recyclerViewSongs = libraryContainer.findViewById(R.id.recyclerViewSongs);
+        emptyState = libraryContainer.findViewById(R.id.emptyState);
+
         // Initialize adapters
         localAdapter = new SongAdapter(new ArrayList<>(), this);
-        binding.recyclerViewSongs.setLayoutManager(new LinearLayoutManager(this));
-        binding.recyclerViewSongs.setAdapter(localAdapter);
+        recyclerViewSongs.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewSongs.setAdapter(localAdapter);
 
         onlineAdapter = new OnlineTrackAdapter((track, position) -> {
             // Convert to Song and play
@@ -102,8 +121,8 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             }
             playerManager.setPlaylist(converted, position);
         });
-        binding.recyclerViewSpotify.setLayoutManager(new LinearLayoutManager(this));
-        binding.recyclerViewSpotify.setAdapter(onlineAdapter);
+        recyclerViewSpotify.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewSpotify.setAdapter(onlineAdapter);
 
         checkPermissionAndLoadSong();
 
@@ -116,34 +135,36 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     }
 
     private void setupTabs() {
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Explore"));
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Library"));
-
-        // Set initial state
-        binding.exploreContainer.setVisibility(android.view.View.VISIBLE);
-        binding.libraryContainer.setVisibility(android.view.View.GONE);
-        binding.searchEditText.setHint("Search JioSaavn...");
-
-        binding.tabLayout.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
+        binding.viewPager.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            @androidx.annotation.NonNull
             @Override
-            public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
-                if (tab.getPosition() == 0) {
-                    binding.exploreContainer.setVisibility(android.view.View.VISIBLE);
-                    binding.libraryContainer.setVisibility(android.view.View.GONE);
+            public RecyclerView.ViewHolder onCreateViewHolder(@androidx.annotation.NonNull android.view.ViewGroup parent, int viewType) {
+                return new RecyclerView.ViewHolder(viewType == 0 ? exploreContainer : libraryContainer) {};
+            }
+            @Override
+            public void onBindViewHolder(@androidx.annotation.NonNull RecyclerView.ViewHolder holder, int position) {}
+            @Override
+            public int getItemCount() { return 2; }
+            @Override
+            public int getItemViewType(int position) { return position; }
+        });
+
+        new com.google.android.material.tabs.TabLayoutMediator(binding.tabLayout, binding.viewPager, (tab, position) -> {
+            tab.setText(position == 0 ? "Explore" : "Library");
+        }).attach();
+
+        binding.viewPager.registerOnPageChangeCallback(new androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                if (position == 0) {
                     binding.searchEditText.setHint("Search JioSaavn...");
-                    // Refresh online search
                     String query = binding.searchEditText.getText().toString();
                     performOnlineSearch(query);
                 } else {
-                    binding.exploreContainer.setVisibility(android.view.View.GONE);
-                    binding.libraryContainer.setVisibility(android.view.View.VISIBLE);
                     binding.searchEditText.setHint("Search your library...");
-                    // Filter local list
                     localAdapter.filter(binding.searchEditText.getText().toString());
                 }
             }
-            @Override public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
-            @Override public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
         });
     }
 
@@ -191,36 +212,36 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             if (currentExploreQuery != null && !currentExploreQuery.isEmpty()) {
                 finalQuery = currentExploreQuery;
             } else {
-                binding.exploreHint.setVisibility(android.view.View.VISIBLE);
-                binding.recyclerViewSpotify.setVisibility(android.view.View.GONE);
+                exploreHint.setVisibility(android.view.View.VISIBLE);
+                recyclerViewSpotify.setVisibility(android.view.View.GONE);
                 return;
             }
         } else {
             finalQuery = query;
         }
 
-        binding.exploreHint.setVisibility(android.view.View.GONE);
-        binding.recyclerViewSpotify.setVisibility(android.view.View.GONE);
-        binding.exploreLoading.setVisibility(android.view.View.VISIBLE);
+        exploreHint.setVisibility(android.view.View.GONE);
+        recyclerViewSpotify.setVisibility(android.view.View.GONE);
+        exploreLoading.setVisibility(android.view.View.VISIBLE);
 
         SaavnApi.searchSongs(finalQuery, 30, new SaavnApi.SearchCallback() {
             @Override
             public void onSuccess(List<SaavnTrack> tracks) {
-                binding.exploreLoading.setVisibility(android.view.View.GONE);
-                binding.recyclerViewSpotify.setVisibility(android.view.View.VISIBLE);
+                exploreLoading.setVisibility(android.view.View.GONE);
+                recyclerViewSpotify.setVisibility(android.view.View.VISIBLE);
                 onlineAdapter.setTracks(tracks);
                 
                 if (tracks.isEmpty()) {
-                    binding.exploreHint.setText("No results found for '" + finalQuery + "'");
-                    binding.exploreHint.setVisibility(android.view.View.VISIBLE);
+                    exploreHint.setText("No results found for '" + finalQuery + "'");
+                    exploreHint.setVisibility(android.view.View.VISIBLE);
                 }
             }
 
             @Override
             public void onError(String error) {
-                binding.exploreLoading.setVisibility(android.view.View.GONE);
-                binding.exploreHint.setText("Error: " + error);
-                binding.exploreHint.setVisibility(android.view.View.VISIBLE);
+                exploreLoading.setVisibility(android.view.View.GONE);
+                exploreHint.setText("Error: " + error);
+                exploreHint.setVisibility(android.view.View.VISIBLE);
             }
         });
     }
@@ -396,12 +417,12 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private void loadSongs() {
         songList = getSongs();
         if (songList.isEmpty()) {
-            binding.recyclerViewSongs.setVisibility(android.view.View.GONE);
-            binding.emptyState.setVisibility(android.view.View.VISIBLE);
+            recyclerViewSongs.setVisibility(android.view.View.GONE);
+            emptyState.setVisibility(android.view.View.VISIBLE);
             binding.songCount.setText("0 Songs");
         } else {
-            binding.recyclerViewSongs.setVisibility(android.view.View.VISIBLE);
-            binding.emptyState.setVisibility(android.view.View.GONE);
+            recyclerViewSongs.setVisibility(android.view.View.VISIBLE);
+            emptyState.setVisibility(android.view.View.GONE);
             localAdapter.setSongs(songList);
             binding.songCount.setText(songList.size() + " Songs");
         }
