@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private RecyclerView.Adapter adapter;
     private List<Song> songList;
     private MusicPlayerManager playerManager;
+    private String currentExploreQuery = "";
 
     private final ActivityResultLauncher<String[]> requestPermissionsLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), results -> {
@@ -130,9 +131,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                     binding.exploreContainer.setVisibility(android.view.View.VISIBLE);
                     binding.libraryContainer.setVisibility(android.view.View.GONE);
                     binding.searchEditText.setHint("Search JioSaavn...");
-                    // Refresh online search if text exists
+                    // Refresh online search
                     String query = binding.searchEditText.getText().toString();
-                    if (!query.isEmpty()) performOnlineSearch(query);
+                    performOnlineSearch(query);
                 } else {
                     binding.exploreContainer.setVisibility(android.view.View.GONE);
                     binding.libraryContainer.setVisibility(android.view.View.VISIBLE);
@@ -175,28 +176,34 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         String[] defaultQueries = {
             "top songs 2024", 
             "bollywood hits", 
-            "lofi mashup", 
-            "viral hits", 
+            "lofi mashup",
             "latest hindi", 
             "punjabi hits",
-            "global top 50"
+            "arijit singh"
         };
-        String randomQuery = defaultQueries[new java.util.Random().nextInt(defaultQueries.length)];
-        performOnlineSearch(randomQuery);
+        currentExploreQuery = defaultQueries[new java.util.Random().nextInt(defaultQueries.length)];
+        performOnlineSearch(currentExploreQuery);
     }
 
     private void performOnlineSearch(String query) {
+        final String finalQuery;
         if (query.trim().isEmpty()) {
-            binding.exploreHint.setVisibility(android.view.View.VISIBLE);
-            binding.recyclerViewSpotify.setVisibility(android.view.View.GONE);
-            return;
+            if (currentExploreQuery != null && !currentExploreQuery.isEmpty()) {
+                finalQuery = currentExploreQuery;
+            } else {
+                binding.exploreHint.setVisibility(android.view.View.VISIBLE);
+                binding.recyclerViewSpotify.setVisibility(android.view.View.GONE);
+                return;
+            }
+        } else {
+            finalQuery = query;
         }
 
         binding.exploreHint.setVisibility(android.view.View.GONE);
         binding.recyclerViewSpotify.setVisibility(android.view.View.GONE);
         binding.exploreLoading.setVisibility(android.view.View.VISIBLE);
 
-        SaavnApi.searchSongs(query, 30, new SaavnApi.SearchCallback() {
+        SaavnApi.searchSongs(finalQuery, 30, new SaavnApi.SearchCallback() {
             @Override
             public void onSuccess(List<SaavnTrack> tracks) {
                 binding.exploreLoading.setVisibility(android.view.View.GONE);
@@ -204,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 onlineAdapter.setTracks(tracks);
                 
                 if (tracks.isEmpty()) {
-                    binding.exploreHint.setText("No results found for '" + query + "'");
+                    binding.exploreHint.setText("No results found for '" + finalQuery + "'");
                     binding.exploreHint.setVisibility(android.view.View.VISIBLE);
                 }
             }

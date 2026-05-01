@@ -46,8 +46,7 @@
 ### 🔍 Smart Search
 - **Online search** with debounced input (500ms) to reduce API calls
 - **Local library search** with instant filtering
-- Randomized initial Explore queries ("bollywood hits", "lofi mashup", "top songs 2024", etc.) for fresh content on every app launch
-
+- **Dynamic Explore State**: Randomized initial Explore queries ("bollywood hits", "lofi mashup", "top songs 2024", etc.) provide fresh content on every app launch. Clearing an active search query automatically restores this explore state to prevent blank screens and keep discovery active.
 ### 🔊 Reliable Background Streaming
 - Foreground service with media notification for uninterrupted playback
 - Wake locks (`WAKE_MODE_NETWORK`) to prevent Android Doze from killing streams
