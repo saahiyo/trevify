@@ -23,6 +23,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
     private List<Song> songs;
     private List<Song> fullList;
     private OnItemClickListerner listener;
+    private Song playingSong;
 
     public interface OnItemClickListerner {
         void onItemClick(int position);
@@ -60,6 +61,11 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         return songs;
     }
 
+    public void setPlayingSong(Song song) {
+        this.playingSong = song;
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public SongAdapter.SongViewholder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -72,8 +78,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
     public void onBindViewHolder(@NonNull SongAdapter.SongViewholder holder, int position) {
         Song song=songs.get(position);
         holder.binding.textTitle.setText(song.title);
-        holder.binding.textArtist.setText(song.artist); // Removed album to keep it cleaner
-        holder.binding.textDuration.setText(formatTime((int)(song.duration/1000)));
+        holder.binding.textArtist.setText(song.artist + " • " + formatTime((int)(song.duration/1000)));
 
         Object imageSource;
         if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
@@ -87,9 +92,12 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
                 .placeholder(R.drawable.placeholder_img)
                 .error(R.drawable.placeholder_img)
                 .into(holder.binding.imageAlbumArt);
-        
-        // Use a subtle tint for the title based on the theme to add "saturation"
-        holder.binding.textTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.text_primary));
+        // Highlight currently playing song
+        if (playingSong != null && playingSong.id == song.id) {
+            holder.binding.textTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.blue));
+        } else {
+            holder.binding.textTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.text_primary));
+        }
 
         // Show favorite state
         updateFavIcon(holder, song);

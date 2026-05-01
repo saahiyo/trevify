@@ -17,6 +17,7 @@ public class splashActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         // Apply saved theme
         android.content.SharedPreferences themePrefs = getSharedPreferences("theme_prefs", android.content.Context.MODE_PRIVATE);
         boolean isDarkMode = themePrefs.getBoolean("dark_mode", false);
@@ -32,7 +33,6 @@ public class splashActivity extends AppCompatActivity {
             return;
         }
 
-        super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         binding=ActivitySplashBinding.inflate(getLayoutInflater());
 

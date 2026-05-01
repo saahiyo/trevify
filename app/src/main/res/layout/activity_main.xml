@@ -8,11 +8,25 @@
     android:background="@color/background_light"
     tools:context=".MainActivity">
 
+    <ImageView
+        android:id="@+id/bgMainAlbumArt"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0.4" />
+
+    <!-- Light overlay to ensure text readability while letting colors show through -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#DDF8F9FF" />
+
     <View
         android:id="@+id/headerBg"
         android:layout_width="match_parent"
         android:layout_height="220dp"
         android:background="@drawable/header_bg"
+        android:alpha="0.5"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView

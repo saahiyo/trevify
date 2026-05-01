@@ -26,6 +26,7 @@ public class MusicService extends MediaSessionService {
         player = new ExoPlayer.Builder(this)
                 .setAudioAttributes(audioAttributes, true) // Handles audio focus automatically
                 .setHandleAudioBecomingNoisy(true) // Pauses on headphones unplugged
+                .setWakeMode(C.WAKE_MODE_NETWORK) // CRITICAL: Keeps CPU/WiFi awake during streaming
                 .build();
 
         mediaSession = new MediaSession.Builder(this, player).build();

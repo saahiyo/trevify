@@ -101,6 +101,13 @@ public class MusicPlayerManager {
                     }
                 }
             }
+
+            @Override
+            public void onPlayerError(androidx.media3.common.PlaybackException error) {
+                error.printStackTrace();
+                // If a stream fails (e.g. timeout or expired URL), skip to the next song automatically
+                playNext();
+            }
         });
 
         // Initial notification if something is already playing

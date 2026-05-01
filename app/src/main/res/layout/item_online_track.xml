@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="80dp"
+    android:layout_height="wrap_content"
     android:paddingHorizontal="16dp"
-    android:paddingVertical="8dp"
+    android:paddingVertical="12dp"
     android:foreground="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
@@ -34,18 +34,18 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginEnd="8dp"
         android:maxLines="1"
         android:ellipsize="end"
         android:textColor="@color/text_primary"
         android:textSize="16sp"
         android:textStyle="bold"
+        android:layout_marginEnd="16dp"
         app:layout_constraintBottom_toTopOf="@+id/onlineArtist"
-        app:layout_constraintEnd_toStartOf="@+id/onlinePlayBtn"
+        app:layout_constraintEnd_toStartOf="@+id/favIcon"
         app:layout_constraintStart_toEndOf="@+id/onlineArtCard"
         app:layout_constraintTop_toTopOf="@+id/onlineArtCard"
         app:layout_constraintVertical_chainStyle="packed"
-        tools:text="Faded" />
+        tools:text="Song Title" />
 
     <TextView
         android:id="@+id/onlineArtist"
@@ -56,36 +56,35 @@
         android:ellipsize="end"
         android:textColor="@color/text_secondary"
         android:textSize="13sp"
+        android:layout_marginEnd="16dp"
         app:layout_constraintBottom_toBottomOf="@+id/onlineArtCard"
-        app:layout_constraintEnd_toStartOf="@+id/onlineDuration"
+        app:layout_constraintEnd_toStartOf="@+id/favIcon"
         app:layout_constraintStart_toStartOf="@+id/onlineTitle"
         app:layout_constraintTop_toBottomOf="@+id/onlineTitle"
-        tools:text="Alan Walker" />
+        tools:text="Alan Walker • 3:32" />
 
-    <TextView
-        android:id="@+id/onlineDuration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="4dp"
-        android:textColor="@color/blue"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:alpha="0.8"
-        app:layout_constraintBottom_toBottomOf="@+id/onlineArtist"
-        app:layout_constraintEnd_toStartOf="@+id/onlinePlayBtn"
-        app:layout_constraintTop_toTopOf="@+id/onlineArtist"
-        tools:text="3:32" />
+        <ImageView
+            android:id="@+id/favIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/moreBtn"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_favorite_border_24"
+            app:tint="@color/text_tertiary" />
 
-    <ImageView
-        android:id="@+id/onlinePlayBtn"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_play_arrow_24"
-        app:tint="@color/blue" />
+        <ImageView
+            android:id="@+id/moreBtn"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_more_vert_24"
+            app:tint="@color/text_tertiary" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

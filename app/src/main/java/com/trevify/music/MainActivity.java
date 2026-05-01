@@ -242,6 +242,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
     @Override
     public void onSongChanged(Song song) {
+        if (localAdapter != null) localAdapter.setPlayingSong(song);
+        if (onlineAdapter != null) onlineAdapter.setPlayingSong(song);
+        
         binding.miniPlayer.setVisibility(android.view.View.VISIBLE);
         binding.miniTitle.setText(song.title);
         binding.miniArtist.setText(song.artist);
@@ -282,6 +285,12 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                     }
                     @Override public void onLoadCleared(@androidx.annotation.Nullable android.graphics.drawable.Drawable placeholder) {}
                 });
+
+        Glide.with(this)
+                .asBitmap()
+                .load(imageSource)
+                .apply(com.bumptech.glide.request.RequestOptions.bitmapTransform(new jp.wasabeef.glide.transformations.BlurTransformation(50, 4)))
+                .into(binding.bgMainAlbumArt);
     }
 
     private void applyDynamicColors(int color) {

@@ -15,6 +15,7 @@ import java.util.List;
 public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.ViewHolder> {
     private List<SaavnTrack> tracks = new ArrayList<>();
     private OnTrackClickListener listener;
+    private Song playingSong;
 
     public interface OnTrackClickListener {
         void onPlayClick(SaavnTrack track, int position);
@@ -33,6 +34,11 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
         return tracks.get(position);
     }
 
+    public void setPlayingSong(Song song) {
+        this.playingSong = song;
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -44,9 +50,17 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SaavnTrack track = tracks.get(position);
-        holder.binding.onlineTitle.setText(track.name);
-        holder.binding.onlineArtist.setText(track.artist);
-        holder.binding.onlineDuration.setText(formatTime((int) (track.durationMs / 1000)));
+        
+        // Highlight currently playing song
+        if (playingSong != null && playingSong.isOnline && playingSong.id == track.id.hashCode()) {
+            holder.binding.onlineTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.blue));
+        } else {
+            holder.binding.onlineTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.text_primary));
+        }
+        
+        holder.binding.onlineTitle.setText(android.text.Html.fromHtml(track.name, android.text.Html.FROM_HTML_MODE_LEGACY).toString());
+        String decodedArtist = android.text.Html.fromHtml(track.artist, android.text.Html.FROM_HTML_MODE_LEGACY).toString();
+        holder.binding.onlineArtist.setText(decodedArtist + " • " + formatTime((int) (track.durationMs / 1000)));
 
         // Load album art from URL
         if (track.albumArtUrl != null && !track.albumArtUrl.isEmpty()) {
@@ -59,15 +73,13 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
             holder.binding.onlineAlbumArt.setImageResource(R.drawable.placeholder_img);
         }
 
-        // Show preview availability
-        if (track.downloadUrl == null || track.downloadUrl.isEmpty()) {
-            holder.binding.onlinePlayBtn.setAlpha(0.3f);
-        } else {
-            holder.binding.onlinePlayBtn.setAlpha(1.0f);
-        }
+        // Show favorite state (Coming soon for online tracks)
+        holder.binding.favIcon.setOnClickListener(v -> {
+            android.widget.Toast.makeText(v.getContext(), "Online favorites coming soon", android.widget.Toast.LENGTH_SHORT).show();
+        });
 
-        holder.binding.onlinePlayBtn.setOnClickListener(v -> {
-            if (listener != null) listener.onPlayClick(track, position);
+        holder.binding.moreBtn.setOnClickListener(v -> {
+            android.widget.Toast.makeText(v.getContext(), "Online track options coming soon", android.widget.Toast.LENGTH_SHORT).show();
         });
 
         holder.binding.getRoot().setOnClickListener(v -> {
