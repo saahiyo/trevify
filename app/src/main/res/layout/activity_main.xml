@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -26,8 +26,20 @@
         android:layout_width="match_parent"
         android:layout_height="220dp"
         android:background="@drawable/header_bg"
-        android:alpha="0.5"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:alpha="0.5" />
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp"
+            app:layout_scrollFlags="scroll">
 
     <TextView
         android:id="@+id/textView"
@@ -99,18 +111,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/subtitle" />
 
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/searchCard"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="56dp"
         android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="24dp"
         app:cardCornerRadius="28dp"
         app:cardElevation="4dp"
         app:strokeWidth="0dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/songCount">
+        app:layout_scrollFlags="scroll">
 
         <EditText
             android:id="@+id/searchEditText"
@@ -139,14 +150,14 @@
         app:tabSelectedTextColor="@color/text_primary"
         app:tabTextColor="@color/text_secondary"
         app:tabIndicatorFullWidth="false"
-        app:tabRippleColor="@android:color/transparent"
-        app:layout_constraintTop_toBottomOf="@+id/searchCard" />
+        app:tabRippleColor="@android:color/transparent" />
+
+    </com.google.android.material.appbar.AppBarLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tabLayout">
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:id="@+id/exploreContainer"
@@ -245,7 +256,7 @@
         app:cardElevation="16dp"
         app:strokeWidth="1dp"
         app:strokeColor="#104D28FF"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:layout_gravity="bottom">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -378,4 +389,4 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
