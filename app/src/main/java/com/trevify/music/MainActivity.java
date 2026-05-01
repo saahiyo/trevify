@@ -164,6 +164,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                     binding.searchEditText.setHint("Search your library...");
                     localAdapter.filter(binding.searchEditText.getText().toString());
                 }
+                updateSongCount();
             }
         });
     }
@@ -181,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 if (binding.tabLayout.getSelectedTabPosition() == 1) {
                     // Local search
                     localAdapter.filter(s.toString());
+                    updateSongCount();
                 } else {
                     // Online search with debounce
                     if (workRunnable != null) handler.removeCallbacks(workRunnable);
@@ -230,6 +232,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 exploreLoading.setVisibility(android.view.View.GONE);
                 recyclerViewSpotify.setVisibility(android.view.View.VISIBLE);
                 onlineAdapter.setTracks(tracks);
+                updateSongCount();
                 
                 if (tracks.isEmpty()) {
                     exploreHint.setText("No results found for '" + finalQuery + "'");
@@ -414,18 +417,28 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         }
         return songs;
     }
+    private void updateSongCount() {
+        if (binding == null || binding.songCount == null) return;
+        if (binding.viewPager.getCurrentItem() == 0) {
+            int count = onlineAdapter != null ? onlineAdapter.getItemCount() : 0;
+            binding.songCount.setText(count + " Songs");
+        } else {
+            int count = localAdapter != null ? localAdapter.getItemCount() : 0;
+            binding.songCount.setText(count + " Songs");
+        }
+    }
+
     private void loadSongs() {
         songList = getSongs();
         if (songList.isEmpty()) {
             recyclerViewSongs.setVisibility(android.view.View.GONE);
             emptyState.setVisibility(android.view.View.VISIBLE);
-            binding.songCount.setText("0 Songs");
         } else {
             recyclerViewSongs.setVisibility(android.view.View.VISIBLE);
             emptyState.setVisibility(android.view.View.GONE);
             localAdapter.setSongs(songList);
-            binding.songCount.setText(songList.size() + " Songs");
         }
+        updateSongCount();
     }
     @Override
     public void onItemClick(int position) {
