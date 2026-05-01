@@ -23,6 +23,15 @@ public class splashActivity extends AppCompatActivity {
         androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
                 isDarkMode ? androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES : androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO);
 
+        // Check if onboarding is completed
+        android.content.SharedPreferences prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        boolean onboarded = prefs.getBoolean("onboarded", false);
+        if (onboarded) {
+            startActivity(new Intent(splashActivity.this, MainActivity.class));
+            finish();
+            return;
+        }
+
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         binding=ActivitySplashBinding.inflate(getLayoutInflater());
@@ -36,6 +45,8 @@ public class splashActivity extends AppCompatActivity {
         });
 
         binding.startBtn.setOnClickListener(v -> {
+                // Mark onboarding as completed
+                prefs.edit().putBoolean("onboarded", true).apply();
                 startActivity(new Intent(splashActivity.this, MainActivity.class));
                 finish();
         });

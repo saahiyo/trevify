@@ -75,10 +75,15 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         holder.binding.textArtist.setText(song.artist); // Removed album to keep it cleaner
         holder.binding.textDuration.setText(formatTime((int)(song.duration/1000)));
 
-        Uri albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"),song.albumId);
+        Object imageSource;
+        if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
+            imageSource = song.albumArtUrl;
+        } else {
+            imageSource = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        }
 
         Glide.with(holder.binding.getRoot().getContext())
-                .load(albumArtUri)
+                .load(imageSource)
                 .placeholder(R.drawable.placeholder_img)
                 .error(R.drawable.placeholder_img)
                 .into(holder.binding.imageAlbumArt);

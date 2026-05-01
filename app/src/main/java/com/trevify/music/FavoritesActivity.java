@@ -144,9 +144,15 @@ public class FavoritesActivity extends AppCompatActivity implements SongAdapter.
         binding.miniArtist.setText(song.artist);
         binding.miniPlayPause.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.blue)));
 
-        Uri albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        Object imageSource;
+        if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
+            imageSource = song.albumArtUrl;
+        } else {
+            imageSource = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        }
+
         Glide.with(this)
-                .load(albumArtUri)
+                .load(imageSource)
                 .placeholder(R.drawable.placeholder_img)
                 .error(R.drawable.placeholder_img)
                 .into(binding.miniAlbumArt);

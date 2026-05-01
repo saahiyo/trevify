@@ -249,10 +249,16 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         // Update mini player tint to be more vibrant based on current theme
         binding.miniPlayPause.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.blue)));
 
-        Uri albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        Object imageSource;
+        if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
+            imageSource = song.albumArtUrl;
+        } else {
+            imageSource = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        }
+
         Glide.with(this)
                 .asBitmap()
-                .load(albumArtUri)
+                .load(imageSource)
                 .placeholder(R.drawable.placeholder_img)
                 .error(R.drawable.placeholder_img)
                 .into(new com.bumptech.glide.request.target.CustomTarget<android.graphics.Bitmap>() {

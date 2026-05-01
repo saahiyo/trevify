@@ -250,13 +250,18 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
         binding.textTitle.setText(song.title != null ? song.title : "Unknown Title");
         binding.textArtist.setText(song.artist != null ? song.artist : "Unknown Artist");
         
-        Uri albumArtUri = ContentUris.withAppendedId(
-                Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        Object imageSource;
+        if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
+            imageSource = song.albumArtUrl;
+        } else {
+            imageSource = ContentUris.withAppendedId(
+                    Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        }
         
-        loadImages(albumArtUri);
+        loadImages(imageSource);
     }
 
-    private void loadImages(Uri uri) {
+    private void loadImages(Object source) {
         // Reset card before loading
         binding.imageAlbumArtPlayer.setPadding(0, 0, 0, 0);
         binding.imageAlbumArtPlayer.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
@@ -264,7 +269,7 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
 
         Glide.with(this)
                 .asBitmap()
-                .load(uri)
+                .load(source)
                 .into(new CustomTarget<Bitmap>() {
                     @Override
                     public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
@@ -295,8 +300,8 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
 
         Glide.with(this)
                 .asBitmap()
-                .load(uri)
-                .apply(bitmapTransform(new BlurTransformation(25, 4)))
+                .load(source)
+                .apply(bitmapTransform(new BlurTransformation(50, 4)))
                 .into(binding.bgAalbumArt);
     }
 
@@ -304,18 +309,16 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
         binding.buttonPlayPause.setBackgroundTintList(ColorStateList.valueOf(color));
         binding.waveformSeekBar.setWaveProgressColor(color);
         
-        // Keep the background very light (white/grey) and only add a tiny hint of color
-        // Using 0x10 alpha (around 6% opacity) for a very subtle tint
-        int tintColor = (0x10000000 & 0xFF000000) | (color & 0x00FFFFFF);
+        // Use a more substantial tint for the background overlay (around 40% opacity)
+        // This ensures the dark gradient we added in XML is reinforced with the song's color
+        int tintColor = (0x66000000 & 0xFF000000) | (color & 0x00FFFFFF);
         binding.backgroundOverlay.setBackgroundColor(tintColor);
         
         binding.backgroundOverlay.setAlpha(0f);
         binding.backgroundOverlay.animate().alpha(1.0f).setDuration(600).start();
         
-        // Use the vibrant color for the interactive elements to give that "saturation"
-        binding.backBtn.setColorFilter(color);
-        binding.favBtn.setColorFilter(color);
-        binding.textView2.setTextColor(color);
+        // Header buttons and title are now white in XML for consistency on busy backgrounds
+        // We only tint the Waveform and Play/Pause button for visual pop
     }
 
     private String formatTime(int seconds) {
