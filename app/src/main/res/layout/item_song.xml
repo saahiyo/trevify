@@ -10,10 +10,22 @@
     android:clickable="true"
     android:focusable="true">
 
+    <View
+        android:id="@+id/brandEdge"
+        android:layout_width="4dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="2dp"
+        android:background="@drawable/brand_row_edge"
+        android:alpha="0.55"
+        app:layout_constraintBottom_toBottomOf="@+id/cardArt"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/cardArt" />
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardArt"
         android:layout_width="60dp"
         android:layout_height="60dp"
+        android:layout_marginStart="10dp"
         app:cardCornerRadius="14dp"
         app:cardElevation="2dp"
         app:strokeWidth="0dp"
@@ -73,6 +85,7 @@
         android:text="Song Title"
         android:maxLines="1"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
         android:textColor="@color/text_primary"
         android:textSize="15sp"
         android:textStyle="bold"
@@ -90,6 +103,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:text="Artist Name"
+        android:fontFamily="sans-serif"
         android:textSize="13sp"
         android:textColor="@color/text_secondary"
         android:maxLines="1"

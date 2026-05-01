@@ -227,6 +227,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             @Override
             public int getItemViewType(int position) { return position; }
         });
+        binding.viewPager.setUserInputEnabled(false);
 
         binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
@@ -497,7 +498,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         binding.miniArtist.setText(song.artist);
         
         // Update mini player tint to be more vibrant based on current theme
-        binding.miniPlayPause.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.blue)));
+        binding.miniPlayPause.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.primary)));
 
         Object imageSource;
         if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
@@ -541,10 +542,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     }
 
     private void applyDynamicColors(int color) {
-        binding.favoritesBtn.setImageTintList(android.content.res.ColorStateList.valueOf(color));
-        binding.profileBtn.setImageTintList(android.content.res.ColorStateList.valueOf(color));
-        binding.songCount.setTextColor(color);
-        binding.miniPlayPause.setImageTintList(android.content.res.ColorStateList.valueOf(color));
+        binding.miniPlayPause.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.primary)));
     }
 
     @Override

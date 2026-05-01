@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background_light">#0A0B1E</color> <!-- Dark background for night mode -->
-    <color name="surface_variant">#161832</color>
-    <color name="text_primary">#F8F9FF</color>
-    <color name="text_secondary">#8A8EA8</color>
-    <color name="text_tertiary">#4D516F</color>
-    <color name="divider">#1A1C3D</color>
-    <color name="glass_bg">#1A0A0B1E</color>
+    <color name="background_light">#071615</color>
+    <color name="surface_variant">#113330</color>
+    <color name="text_primary">#F3FFFB</color>
+    <color name="text_secondary">#9AB7B0</color>
+    <color name="text_tertiary">#647F78</color>
+    <color name="divider">#243E3A</color>
+    <color name="glass_bg">#1A071615</color>
 </resources>
