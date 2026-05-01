@@ -39,18 +39,19 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
         this.playingSong = song;
 
         if (oldPlayingSong != null && oldPlayingSong.isOnline) {
-            int oldPos = findTrackPositionByHashCode(oldPlayingSong.id);
+            int oldPos = findTrackPositionBySourceId(oldPlayingSong.sourceId);
             if (oldPos != -1) notifyItemChanged(oldPos);
         }
         if (playingSong != null && playingSong.isOnline) {
-            int newPos = findTrackPositionByHashCode(playingSong.id);
+            int newPos = findTrackPositionBySourceId(playingSong.sourceId);
             if (newPos != -1) notifyItemChanged(newPos);
         }
     }
 
-    private int findTrackPositionByHashCode(long hashCode) {
+    private int findTrackPositionBySourceId(String sourceId) {
+        if (sourceId == null || sourceId.isEmpty()) return -1;
         for (int idx = 0; idx < tracks.size(); idx++) {
-            if (tracks.get(idx).id.hashCode() == hashCode) {
+            if (sourceId.equals(tracks.get(idx).id)) {
                 return idx;
             }
         }
@@ -70,7 +71,7 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
         SaavnTrack track = tracks.get(position);
         
         // Highlight currently playing song
-        if (playingSong != null && playingSong.isOnline && playingSong.id == track.id.hashCode()) {
+        if (playingSong != null && playingSong.isOnline && track.id.equals(playingSong.sourceId)) {
             holder.binding.onlineTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.blue));
         } else {
             holder.binding.onlineTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.text_primary));
@@ -101,6 +102,7 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
                 Song s = new Song(track.id.hashCode(), track.name, track.artist, track.albumName, track.downloadUrl, track.albumName.hashCode(), track.durationMs);
                 s.albumArtUrl = track.albumArtUrl;
                 s.isOnline = true;
+                s.sourceId = track.id;
                 FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(track.id, s);
             } else {
                 FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(track.id);
@@ -128,6 +130,7 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
                         Song s = new Song(track.id.hashCode(), track.name, track.artist, track.albumName, track.downloadUrl, track.albumName.hashCode(), track.durationMs);
                         s.albumArtUrl = track.albumArtUrl;
                         s.isOnline = true;
+                        s.sourceId = track.id;
                         FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(track.id, s);
                     } else {
                         FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(track.id);

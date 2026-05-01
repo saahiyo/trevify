@@ -11,7 +11,6 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
-import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 
@@ -34,6 +33,7 @@ public class MusicPlayerManager {
     private int currentIndex = -1;
     private boolean isShuffle = false;
     private boolean isRepeat = false;
+    private boolean shouldPlayWhenReady = false;
 
     private final List<PlaybackListener> listeners = new ArrayList<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -62,6 +62,10 @@ public class MusicPlayerManager {
             try {
                 player = controllerFuture.get();
                 setupPlayerListener();
+                if (shouldPlayWhenReady && !currentPlaylist.isEmpty()) {
+                    applyPlaylistToPlayer(0, true);
+                    shouldPlayWhenReady = false;
+                }
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
@@ -96,7 +100,7 @@ public class MusicPlayerManager {
                 // Find the song in our current playlist that matches this mediaItem
                 if (mediaItem != null) {
                     for (Song s : currentPlaylist) {
-                        if (String.valueOf(s.id).equals(mediaItem.mediaId)) {
+                        if (s.getStableKey().equals(mediaItem.mediaId)) {
                             currentIndex = currentPlaylist.indexOf(s);
                             StatsManager.getInstance(context).logPlay(s.id);
                             notifySongChanged(s);
@@ -130,6 +134,9 @@ public class MusicPlayerManager {
     }
 
     public void setPlaylist(List<Song> songs, int startIndex) {
+        if (songs == null || songs.isEmpty()) return;
+        if (startIndex < 0 || startIndex >= songs.size()) return;
+
         this.originalList = new ArrayList<>(songs);
         if (isShuffle) {
             this.currentPlaylist = new ArrayList<>(songs);
@@ -141,13 +148,29 @@ public class MusicPlayerManager {
             this.currentIndex = startIndex;
         }
 
-        if (player != null) {
-            List<MediaItem> mediaItems = new ArrayList<>();
-            for (Song song : currentPlaylist) {
-                mediaItems.add(createMediaItem(song));
-            }
-            player.setMediaItems(mediaItems, currentIndex, 0);
-            player.prepare();
+        Song currentSong = getCurrentSong();
+        if (currentSong != null) {
+            notifySongChanged(currentSong);
+        }
+
+        if (player == null) {
+            shouldPlayWhenReady = true;
+            return;
+        }
+
+        applyPlaylistToPlayer(0, true);
+    }
+
+    private void applyPlaylistToPlayer(long startPositionMs, boolean play) {
+        if (player == null || currentIndex < 0 || currentIndex >= currentPlaylist.size()) return;
+
+        List<MediaItem> mediaItems = new ArrayList<>();
+        for (Song song : currentPlaylist) {
+            mediaItems.add(createMediaItem(song));
+        }
+        player.setMediaItems(mediaItems, currentIndex, startPositionMs);
+        player.prepare();
+        if (play) {
             player.play();
         }
     }
@@ -168,7 +191,7 @@ public class MusicPlayerManager {
                 .build();
 
         return new MediaItem.Builder()
-                .setMediaId(String.valueOf(song.id))
+                .setMediaId(song.getStableKey())
                 .setUri(song.data)
                 .setMediaMetadata(metadata)
                 .build();

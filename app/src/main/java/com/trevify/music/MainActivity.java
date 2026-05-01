@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private List<Song> songList;
     private MusicPlayerManager playerManager;
     private String currentExploreQuery = "";
+    private int searchRequestGeneration = 0;
     
     private android.view.View exploreContainer;
     private android.view.View libraryContainer;
@@ -61,10 +62,14 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 
                 if (storageGranted) {
                     loadSongs();
+                    requestNotificationPermissionIfNeeded();
                 } else {
                     Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show();
                 }
             });
+
+    private final ActivityResultLauncher<String> requestNotificationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {});
 
     private OnlineTrackAdapter onlineAdapter;
     private SongAdapter localAdapter;
@@ -172,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 );
                 s.albumArtUrl = t.albumArtUrl;
                 s.isOnline = true;
+                s.sourceId = t.id;
                 converted.add(s);
             }
             playerManager.setPlaylist(converted, position);
@@ -360,9 +366,12 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         recyclerViewSpotify.setVisibility(android.view.View.GONE);
         exploreLoading.setVisibility(android.view.View.VISIBLE);
 
+        final int requestGeneration = ++searchRequestGeneration;
         SaavnApi.searchSongs(finalQuery, 30, new SaavnApi.SearchCallback() {
             @Override
             public void onSuccess(List<SaavnTrack> tracks) {
+                if (requestGeneration != searchRequestGeneration) return;
+
                 exploreLoading.setVisibility(android.view.View.GONE);
                 recyclerViewSpotify.setVisibility(android.view.View.VISIBLE);
                 onlineAdapter.setTracks(tracks);
@@ -376,6 +385,8 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
             @Override
             public void onError(String error) {
+                if (requestGeneration != searchRequestGeneration) return;
+
                 exploreLoading.setVisibility(android.view.View.GONE);
                 exploreHint.setText("Error: " + error);
                 exploreHint.setVisibility(android.view.View.VISIBLE);
@@ -515,7 +526,6 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         List<String> permissions = new ArrayList<>();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.READ_MEDIA_AUDIO);
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS);
         } else {
             permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
         }
@@ -530,9 +540,19 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
         if (allGranted) {
             loadSongs();
+            requestNotificationPermissionIfNeeded();
         } else {
             requestPermissionsLauncher.launch(permissions.toArray(new String[0]));
         }
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
     }
     private List<Song> getSongs() {
         List<Song> songs = new ArrayList<>();

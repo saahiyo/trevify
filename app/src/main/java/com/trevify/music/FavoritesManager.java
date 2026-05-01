@@ -27,8 +27,18 @@ public class FavoritesManager {
         return isFavorite(String.valueOf(songId));
     }
 
+    public boolean isFavorite(Song song) {
+        return song != null && isFavorite(song.getStableKey());
+    }
+
     public void toggleFavorite(long songId) {
         toggleFavorite(String.valueOf(songId));
+    }
+
+    public void toggleFavorite(Song song) {
+        if (song != null) {
+            toggleFavorite(song.getStableKey());
+        }
     }
 
     public boolean isFavorite(String songId) {
@@ -58,6 +68,7 @@ public class FavoritesManager {
             json.put("duration", song.duration);
             json.put("albumArtUrl", song.albumArtUrl);
             json.put("isOnline", song.isOnline);
+            json.put("sourceId", song.getStableKey());
             sharedPreferences.edit().putString("online_" + stringId, json.toString()).apply();
         } catch (Exception e) {
             e.printStackTrace();
@@ -86,6 +97,7 @@ public class FavoritesManager {
                     );
                     song.albumArtUrl = json.optString("albumArtUrl");
                     song.isOnline = json.optBoolean("isOnline");
+                    song.sourceId = json.optString("sourceId", entry.getKey().substring("online_".length()));
                     list.add(song);
                 } catch (Exception e) {
                     e.printStackTrace();

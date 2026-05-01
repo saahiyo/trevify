@@ -68,18 +68,18 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         
         // Notify only the items that need to change color
         if (oldPlayingSong != null) {
-            int oldPos = findSongPosition(oldPlayingSong.id);
+            int oldPos = findSongPosition(oldPlayingSong.getStableKey());
             if (oldPos != -1) notifyItemChanged(oldPos);
         }
         if (playingSong != null) {
-            int newPos = findSongPosition(playingSong.id);
+            int newPos = findSongPosition(playingSong.getStableKey());
             if (newPos != -1) notifyItemChanged(newPos);
         }
     }
 
-    private int findSongPosition(long songId) {
+    private int findSongPosition(String songKey) {
         for (int idx = 0; idx < songs.size(); idx++) {
-            if (songs.get(idx).id == songId) {
+            if (songs.get(idx).getStableKey().equals(songKey)) {
                 return idx;
             }
         }
@@ -113,7 +113,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
                 .error(R.drawable.placeholder_img)
                 .into(holder.binding.imageAlbumArt);
         // Highlight currently playing song
-        if (playingSong != null && playingSong.id == song.id) {
+        if (playingSong != null && playingSong.getStableKey().equals(song.getStableKey())) {
             holder.binding.textTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.blue));
         } else {
             holder.binding.textTitle.setTextColor(holder.binding.getRoot().getContext().getColor(R.color.text_primary));
@@ -124,17 +124,17 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
 
         // Toggle favorite on heart tap
         holder.binding.favIcon.setOnClickListener(v -> {
-            boolean wasFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
-            FavoritesManager.getInstance(v.getContext()).toggleFavorite(song.id);
+            boolean wasFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song);
+            FavoritesManager.getInstance(v.getContext()).toggleFavorite(song);
             if (song.isOnline) {
                 if (!wasFav) {
-                    FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(String.valueOf(song.id), song);
+                    FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(song.getStableKey(), song);
                 } else {
-                    FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(String.valueOf(song.id));
+                    FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(song.getStableKey());
                 }
             }
             updateFavIcon(holder, song);
-            boolean nowFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
+            boolean nowFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song);
             Toast.makeText(v.getContext(), nowFav ? "Added to favorites" : "Removed from favorites", Toast.LENGTH_SHORT).show();
         });
 
@@ -142,7 +142,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
             PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
             popupMenu.getMenuInflater().inflate(R.menu.song_menu, popupMenu.getMenu());
 
-            boolean isFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
+            boolean isFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song);
             popupMenu.getMenu().findItem(R.id.menu_favorite).setTitle(isFav ? "Remove from Favorites" : "Add to Favorites");
             android.view.MenuItem downloadItem = popupMenu.getMenu().findItem(R.id.menu_download);
             if (downloadItem != null) {
@@ -154,17 +154,17 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
                 if (id == R.id.menu_play) {
                     listener.onItemClick(position, holder.binding.imageAlbumArt);
                 } else if (id == R.id.menu_favorite) {
-                    boolean wasFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
-                    FavoritesManager.getInstance(v.getContext()).toggleFavorite(song.id);
+                    boolean wasFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song);
+                    FavoritesManager.getInstance(v.getContext()).toggleFavorite(song);
                     if (song.isOnline) {
                         if (!wasFav) {
-                            FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(String.valueOf(song.id), song);
+                            FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(song.getStableKey(), song);
                         } else {
-                            FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(String.valueOf(song.id));
+                            FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(song.getStableKey());
                         }
                     }
                     updateFavIcon(holder, song);
-                    boolean nowFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
+                    boolean nowFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song);
                     Toast.makeText(v.getContext(), nowFav ? "Added to favorites" : "Removed from favorites", Toast.LENGTH_SHORT).show();
                 } else if (id == R.id.menu_share) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -218,7 +218,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
     }
 
     private void updateFavIcon(SongViewholder holder, Song song) {
-        boolean isFav = FavoritesManager.getInstance(holder.binding.getRoot().getContext()).isFavorite(song.id);
+        boolean isFav = FavoritesManager.getInstance(holder.binding.getRoot().getContext()).isFavorite(song);
         if (isFav) {
             holder.binding.favIcon.setImageResource(R.drawable.ic_favorite_24);
             holder.binding.favIcon.setImageTintList(android.content.res.ColorStateList.valueOf(

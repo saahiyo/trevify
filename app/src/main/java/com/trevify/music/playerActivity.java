@@ -74,7 +74,7 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
 
         if (songList != null && !songList.isEmpty()) {
             Song current = playerManager.getCurrentSong();
-            if (current == null || current.id != songList.get(startIndex).id) {
+            if (current == null || !current.getStableKey().equals(songList.get(startIndex).getStableKey())) {
                 playerManager.setPlaylist(songList, startIndex);
             }
         } else {
@@ -135,13 +135,13 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
         binding.favBtn.setOnClickListener(v -> {
             Song currentSong = playerManager.getCurrentSong();
             if (currentSong != null) {
-                boolean wasFav = FavoritesManager.getInstance(this).isFavorite(currentSong.id);
-                FavoritesManager.getInstance(this).toggleFavorite(currentSong.id);
+                boolean wasFav = FavoritesManager.getInstance(this).isFavorite(currentSong);
+                FavoritesManager.getInstance(this).toggleFavorite(currentSong);
                 if (currentSong.isOnline) {
                     if (!wasFav) {
-                        FavoritesManager.getInstance(this).saveOnlineFavorite(String.valueOf(currentSong.id), currentSong);
+                        FavoritesManager.getInstance(this).saveOnlineFavorite(currentSong.getStableKey(), currentSong);
                     } else {
-                        FavoritesManager.getInstance(this).removeOnlineFavorite(String.valueOf(currentSong.id));
+                        FavoritesManager.getInstance(this).removeOnlineFavorite(currentSong.getStableKey());
                     }
                 }
                 updateFavoriteIcon(currentSong);
@@ -162,7 +162,7 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
 
             Song currentSong = playerManager.getCurrentSong();
             if (currentSong != null) {
-                boolean isFav = FavoritesManager.getInstance(this).isFavorite(currentSong.id);
+                boolean isFav = FavoritesManager.getInstance(this).isFavorite(currentSong);
                 popupMenu.getMenu().findItem(R.id.menu_favorite).setTitle(isFav ? "Remove from Favorites" : "Add to Favorites");
                 
                 android.view.MenuItem downloadItem = popupMenu.getMenu().findItem(R.id.menu_download);
@@ -174,13 +174,13 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
             popupMenu.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
                 if (id == R.id.menu_favorite && currentSong != null) {
-                    boolean wasFav = FavoritesManager.getInstance(this).isFavorite(currentSong.id);
-                    FavoritesManager.getInstance(this).toggleFavorite(currentSong.id);
+                    boolean wasFav = FavoritesManager.getInstance(this).isFavorite(currentSong);
+                    FavoritesManager.getInstance(this).toggleFavorite(currentSong);
                     if (currentSong.isOnline) {
                         if (!wasFav) {
-                            FavoritesManager.getInstance(this).saveOnlineFavorite(String.valueOf(currentSong.id), currentSong);
+                            FavoritesManager.getInstance(this).saveOnlineFavorite(currentSong.getStableKey(), currentSong);
                         } else {
-                            FavoritesManager.getInstance(this).removeOnlineFavorite(String.valueOf(currentSong.id));
+                            FavoritesManager.getInstance(this).removeOnlineFavorite(currentSong.getStableKey());
                         }
                     }
                     updateFavoriteIcon(currentSong);
@@ -257,7 +257,7 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
     }
 
     private void updateFavoriteIcon(Song song) {
-        boolean isFav = FavoritesManager.getInstance(this).isFavorite(song.id);
+        boolean isFav = FavoritesManager.getInstance(this).isFavorite(song);
         binding.favBtn.setImageResource(isFav ? R.drawable.ic_favorite_24 : R.drawable.ic_favorite_border_24);
         if (isFav) {
             binding.favBtn.setColorFilter(getColor(R.color.accent_vibrant));

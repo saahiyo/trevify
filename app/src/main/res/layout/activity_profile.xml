@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:text="Profile"
         android:textColor="@color/text_primary"
-        android:textSize="20sp"
+        android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@+id/backBtn"
         app:layout_constraintEnd_toEndOf="parent"
@@ -69,7 +69,7 @@
         android:layout_marginTop="16dp"
         android:text="Music Enthusiast"
         android:textColor="@color/text_primary"
-        android:textSize="24sp"
+        android:textSize="22sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -108,7 +108,7 @@
                     android:layout_height="wrap_content"
                     android:text="0"
                     android:textColor="@color/blue"
-                    android:textSize="22sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -143,7 +143,7 @@
                     android:layout_height="wrap_content"
                     android:text="0"
                     android:textColor="@color/accent_vibrant"
-                    android:textSize="22sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -194,7 +194,7 @@
                     android:layout_marginStart="16dp"
                     android:text="Dark Mode"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/themeIcon"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -235,7 +235,7 @@
                     android:layout_marginStart="16dp"
                     android:text="About Trevify"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/aboutIcon"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -261,7 +261,7 @@
         android:layout_marginTop="32dp"
         android:text="Recently Played"
         android:textColor="@color/text_primary"
-        android:textSize="18sp"
+        android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/settingsCard" />
