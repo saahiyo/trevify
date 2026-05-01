@@ -1,15 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Material 3 Tonal Palette (Indigo/Violet base) -->
+    <color name="primary">#4F52FF</color>
+    <color name="onPrimary">#FFFFFF</color>
+    <color name="primaryContainer">#E0E0FF</color>
+    <color name="onPrimaryContainer">#00006E</color>
+    
+    <color name="secondary">#5D5D71</color>
+    <color name="onSecondary">#FFFFFF</color>
+    <color name="secondaryContainer">#E2E0F9</color>
+    <color name="onSecondaryContainer">#191A2C</color>
+    
+    <color name="tertiary">#795369</color>
+    <color name="onTertiary">#FFFFFF</color>
+    <color name="tertiaryContainer">#FFD8EB</color>
+    <color name="onTertiaryContainer">#2E1124</color>
+    
+    <color name="error">#BA1A1A</color>
+    <color name="onError">#FFFFFF</color>
+    <color name="errorContainer">#FFDAD6</color>
+    <color name="onErrorContainer">#410002</color>
+    
+    <color name="background">#FDFBFF</color>
+    <color name="onBackground">#1B1B1F</color>
+    <color name="surface">#FDFBFF</color>
+    <color name="onSurface">#1B1B1F</color>
+    <color name="surfaceVariant">#E3E1EC</color>
+    <color name="onSurfaceVariant">#46464F</color>
+    <color name="outline">#777680</color>
+
+    <!-- Legacy Aliases (to keep layouts working without refactoring) -->
+    <color name="blue">@color/primary</color>
+    <color name="blue_light">@color/primaryContainer</color>
+    <color name="accent_vibrant">@color/tertiary</color>
+    <color name="background_light">@color/background</color>
+    <color name="surface_variant">@color/surfaceVariant</color>
+    <color name="text_primary">@color/onSurface</color>
+    <color name="text_secondary">@color/onSurfaceVariant</color>
+    <color name="text_tertiary">@color/outline</color>
+    <color name="divider">#1F000000</color>
+    <color name="glass_bg">#CCFFFFFF</color>
+    
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="blue">#4D28FF</color> <!-- More vibrant primary blue -->
-    <color name="blue_light">#EEF0FF</color>
-    <color name="accent_vibrant">#FF2E6B</color> <!-- New vibrant accent color -->
-    <color name="background_light">#F8F9FF</color> <!-- Slight blue tint to background -->
-    <color name="surface_variant">#F1F3FB</color>
-    <color name="text_primary">#0A0B1E</color> <!-- Deeper dark for better contrast -->
-    <color name="text_secondary">#4D516F</color>
-    <color name="text_tertiary">#8A8EA8</color>
-    <color name="divider">#E1E4F2</color>
-    <color name="glass_bg">#DDFFFFFF</color>
 </resources>

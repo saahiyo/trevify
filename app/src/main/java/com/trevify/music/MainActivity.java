@@ -45,6 +45,10 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private android.widget.ProgressBar exploreLoading;
     private android.widget.TextView exploreHint;
     private android.widget.LinearLayout emptyState;
+    private android.view.View historyContainer;
+    private RecyclerView historyRecyclerView;
+    private android.widget.TextView clearAllBtn;
+    private SearchHistoryAdapter searchHistoryAdapter;
 
     private final ActivityResultLauncher<String[]> requestPermissionsLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), results -> {
@@ -77,12 +81,25 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         ViewCompat.setOnApplyWindowInsetsListener(binding.main, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, 0, systemBars.right, systemBars.bottom);
-            
-            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp = 
-                (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) binding.textView.getLayoutParams();
-            lp.topMargin = systemBars.top + (int)(48 * getResources().getDisplayMetrics().density);
-            binding.textView.setLayoutParams(lp);
+
+            // Apply top padding to AppBarLayout so it completely pushes down all pinned/sticky elements
+            binding.appBarLayout.setPadding(0, systemBars.top, 0, 0);
+
             return insets;
+        });
+
+        // Handle back press to close search overlay
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (binding.searchToolbar.getVisibility() == android.view.View.VISIBLE) {
+                    binding.searchBackBtn.performClick();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                    setEnabled(true);
+                }
+            }
         });
 
         exploreContainer = getLayoutInflater().inflate(R.layout.layout_explore, null);
@@ -93,8 +110,46 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         exploreLoading = exploreContainer.findViewById(R.id.exploreLoading);
         exploreHint = exploreContainer.findViewById(R.id.exploreHint);
         recyclerViewSpotify = exploreContainer.findViewById(R.id.recyclerViewSpotify);
+        historyContainer = binding.historyContainer;
+        historyRecyclerView = binding.historyRecyclerView;
+        clearAllBtn = binding.clearAllBtn;
         recyclerViewSongs = libraryContainer.findViewById(R.id.recyclerViewSongs);
         emptyState = libraryContainer.findViewById(R.id.emptyState);
+
+        // Setup search history adapter
+        searchHistoryAdapter = new SearchHistoryAdapter(new SearchHistoryAdapter.OnHistoryItemListener() {
+            @Override
+            public void onItemClick(String query) {
+                binding.searchEditText.setText(query);
+                binding.searchEditText.setSelection(query.length());
+                performOnlineSearch(query);
+            }
+
+            @Override
+            public void onFillClick(String query) {
+                // Fill the search bar without triggering search
+                binding.searchEditText.setText(query);
+                binding.searchEditText.setSelection(query.length());
+            }
+
+            @Override
+            public void onDeleteClick(String query, int position) {
+                SearchHistoryManager.getInstance(MainActivity.this).removeSearch(query);
+                searchHistoryAdapter.removeItem(position);
+                // Hide history if no more items
+                if (searchHistoryAdapter.getItemCount() == 0) {
+                    historyContainer.setVisibility(android.view.View.GONE);
+                }
+            }
+        });
+        historyRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        historyRecyclerView.setAdapter(searchHistoryAdapter);
+
+        // Clear all history button
+        clearAllBtn.setOnClickListener(v -> {
+            SearchHistoryManager.getInstance(this).clearHistory();
+            historyContainer.setVisibility(android.view.View.GONE);
+        });
 
         // Initialize adapters
         localAdapter = new SongAdapter(new ArrayList<>(), this);
@@ -157,10 +212,12 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             @Override
             public void onPageSelected(int position) {
                 if (position == 0) {
+                    binding.searchHintText.setText("Search JioSaavn...");
                     binding.searchEditText.setHint("Search JioSaavn...");
                     String query = binding.searchEditText.getText().toString();
                     performOnlineSearch(query);
                 } else {
+                    binding.searchHintText.setText("Search your library...");
                     binding.searchEditText.setHint("Search your library...");
                     localAdapter.filter(binding.searchEditText.getText().toString());
                 }
@@ -170,6 +227,44 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     }
 
     private void setupSearch() {
+        // Trigger opens search overlay
+        binding.searchCard.setOnClickListener(v -> {
+            binding.headerSection.setVisibility(android.view.View.GONE);
+            binding.searchCard.setVisibility(android.view.View.GONE);
+            binding.tabLayout.setVisibility(android.view.View.GONE);
+            
+            binding.searchToolbar.setVisibility(android.view.View.VISIBLE);
+            
+            binding.searchEditText.requestFocus();
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(binding.searchEditText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            
+            if (binding.searchEditText.getText().toString().isEmpty()) {
+                showHistory();
+            }
+        });
+
+        // Back button closes search overlay
+        binding.searchBackBtn.setOnClickListener(v -> {
+            binding.searchToolbar.setVisibility(android.view.View.GONE);
+            binding.historyContainer.setVisibility(android.view.View.GONE);
+            
+            binding.headerSection.setVisibility(android.view.View.VISIBLE);
+            binding.searchCard.setVisibility(android.view.View.VISIBLE);
+            binding.tabLayout.setVisibility(android.view.View.VISIBLE);
+            
+            binding.searchEditText.clearFocus();
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.hideSoftInputFromWindow(binding.searchEditText.getWindowToken(), 0);
+            
+            // Re-apply query to search view if any, else default
+            if (!binding.searchEditText.getText().toString().trim().isEmpty()) {
+                binding.searchHintText.setText(binding.searchEditText.getText().toString().trim());
+            } else {
+                binding.searchHintText.setText(binding.viewPager.getCurrentItem() == 0 ? "Search JioSaavn..." : "Search your library...");
+            }
+        });
+
         binding.searchEditText.addTextChangedListener(new TextWatcher() {
             private final Handler handler = new Handler(android.os.Looper.getMainLooper());
             private Runnable workRunnable;
@@ -179,6 +274,17 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Show/hide clear button
+                binding.searchClearBtn.setVisibility(
+                    s.length() > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+
+                // Show history if empty
+                if (s.length() == 0) {
+                    showHistory();
+                } else {
+                    binding.historyContainer.setVisibility(android.view.View.GONE);
+                }
+
                 if (binding.tabLayout.getSelectedTabPosition() == 1) {
                     // Local search
                     localAdapter.filter(s.toString());
@@ -194,10 +300,34 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        // Clear button clears the search text
+        binding.searchClearBtn.setOnClickListener(v -> {
+            binding.searchEditText.setText("");
+            binding.searchEditText.requestFocus();
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(binding.searchEditText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+        });
         
+        binding.searchEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                // Save history on search submit
+                String query = binding.searchEditText.getText().toString().trim();
+                if (!query.isEmpty() && binding.viewPager.getCurrentItem() == 0) {
+                    SearchHistoryManager.getInstance(this).addSearch(query);
+                }
+                
+                binding.searchEditText.clearFocus();
+                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                if (imm != null) imm.hideSoftInputFromWindow(binding.searchEditText.getWindowToken(), 0);
+                return true;
+            }
+            return false;
+        });
+
         // Initial fetch for explore with diverse high-quality queries
         String[] defaultQueries = {
-            "top songs 2024", 
+            "top songs 2026",
             "bollywood hits", 
             "lofi mashup",
             "latest hindi", 
@@ -211,6 +341,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private void performOnlineSearch(String query) {
         final String finalQuery;
         if (query.trim().isEmpty()) {
+            if (binding.searchToolbar.getVisibility() == android.view.View.VISIBLE) {
+                showHistory();
+            }
             if (currentExploreQuery != null && !currentExploreQuery.isEmpty()) {
                 finalQuery = currentExploreQuery;
             } else {
@@ -220,6 +353,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             }
         } else {
             finalQuery = query;
+            // No history saving on debounce, we do it in IME_ACTION_SEARCH
         }
 
         exploreHint.setVisibility(android.view.View.GONE);
@@ -249,7 +383,22 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         });
     }
 
+    private void showHistory() {
+        if (binding.viewPager.getCurrentItem() != 0) return;
+        if (binding.searchToolbar.getVisibility() != android.view.View.VISIBLE) return;
+
+        List<String> history = SearchHistoryManager.getInstance(this).getHistory();
+        if (history.isEmpty()) {
+            binding.historyContainer.setVisibility(android.view.View.GONE);
+            return;
+        }
+
+        binding.historyContainer.setVisibility(android.view.View.VISIBLE);
+        searchHistoryAdapter.setHistory(history);
+    }
+
     private void setupMiniPlayer() {
+
         binding.miniPlayer.setOnClickListener(v -> {
             Intent intent = new Intent(this, playerActivity.class);
             startActivity(intent);
@@ -441,10 +590,10 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         updateSongCount();
     }
     @Override
-    public void onItemClick(int position) {
+    public void onItemClick(int position, android.view.View view) {
         List<Song> currentSongs;
-        if (adapter instanceof SongAdapter) {
-            currentSongs = ((SongAdapter) adapter).getSongs();
+        if (localAdapter != null && binding.viewPager.getCurrentItem() == 1) {
+            currentSongs = localAdapter.getSongs();
         } else {
             currentSongs = songList;
         }
@@ -452,6 +601,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         Intent intent = new Intent(this, playerActivity.class);
         intent.putParcelableArrayListExtra("songList", new ArrayList<>(currentSongs));
         intent.putExtra("position", position);
-        startActivity(intent);
+
+        androidx.core.app.ActivityOptionsCompat options = androidx.core.app.ActivityOptionsCompat.makeSceneTransitionAnimation(
+                this, view, "album_art_transition");
+        startActivity(intent, options.toBundle());
     }
 }

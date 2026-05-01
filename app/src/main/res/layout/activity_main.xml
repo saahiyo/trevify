@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -19,7 +19,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#DDF8F9FF" />
+        android:background="#E6FDFBFF" />
 
     <View
         android:id="@+id/headerBg"
@@ -28,137 +28,262 @@
         android:background="@drawable/header_bg"
         android:alpha="0.5" />
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:elevation="0dp">
+        android:layout_height="match_parent">
 
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            app:elevation="0dp">
+
+        <!-- Pinned Search Toolbar (Hidden by default, replaces header when searching) -->
+        <LinearLayout
+            android:id="@+id/searchToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/searchBackBtn"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="10dp"
+                app:srcCompat="@drawable/ic_arrow_back_24"
+                app:tint="@color/text_primary" />
+
+            <EditText
+                android:id="@+id/searchEditText"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="4dp"
+                android:background="@android:color/transparent"
+                android:hint="Search..."
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:singleLine="true"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_tertiary"
+                android:textSize="17sp"
+                android:importantForAutofill="no" />
+
+            <ImageView
+                android:id="@+id/searchClearBtn"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="12dp"
+                android:visibility="gone"
+                app:srcCompat="@drawable/ic_close_24"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- Header Section (Scrolls away) -->
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/headerSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="16dp"
-            app:layout_scrollFlags="scroll">
+            app:layout_scrollFlags="scroll|enterAlways|snap">
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="48dp"
-        android:textColor="@color/text_primary"
-        android:textSize="34sp"
-        android:textStyle="bold"
-        android:text="@string/explorer_artist"
-        android:letterSpacing="-0.03"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="48dp"
+                android:textColor="@color/text_primary"
+                android:textSize="34sp"
+                android:textStyle="bold"
+                android:text="@string/explorer_artist"
+                android:letterSpacing="-0.03"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
-        android:id="@+id/favoritesBtn"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginEnd="8dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="12dp"
-        app:layout_constraintBottom_toBottomOf="@+id/textView"
-        app:layout_constraintEnd_toStartOf="@+id/profileBtn"
-        app:layout_constraintTop_toTopOf="@+id/textView"
-        app:srcCompat="@drawable/ic_favorite_border_24"
-        app:tint="@color/blue" />
+            <ImageView
+                android:id="@+id/favoritesBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="12dp"
+                app:layout_constraintBottom_toBottomOf="@+id/textView"
+                app:layout_constraintEnd_toStartOf="@+id/profileBtn"
+                app:layout_constraintTop_toTopOf="@+id/textView"
+                app:srcCompat="@drawable/ic_favorite_border_24"
+                app:tint="@color/blue" />
 
-    <ImageView
-        android:id="@+id/profileBtn"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginEnd="16dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="12dp"
-        app:layout_constraintBottom_toBottomOf="@+id/textView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/textView"
-        app:srcCompat="@drawable/ic_person_24"
-        app:tint="@color/blue" />
+            <ImageView
+                android:id="@+id/profileBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="12dp"
+                app:layout_constraintBottom_toBottomOf="@+id/textView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/textView"
+                app:srcCompat="@drawable/ic_person_24"
+                app:tint="@color/blue" />
 
-    <TextView
-        android:id="@+id/subtitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="2dp"
-        android:text="Discover. Play. Feel every beat."
-        android:textColor="@color/text_secondary"
-        android:textSize="14sp"
-        android:letterSpacing="0.01"
-        android:alpha="0.9"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+            <TextView
+                android:id="@+id/subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="2dp"
+                android:text="Discover. Play. Feel every beat."
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:letterSpacing="0.01"
+                android:alpha="0.9"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textView" />
 
-    <TextView
-        android:id="@+id/songCount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="8dp"
-        android:textColor="@color/blue"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:background="@drawable/count_badge_bg"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="4dp"
-        tools:text="142 Songs"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/subtitle" />
-
+            <TextView
+                android:id="@+id/songCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/blue"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="@drawable/count_badge_bg"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                tools:text="142 Songs"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/subtitle" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/searchCard"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginHorizontal="20dp"
-        app:cardCornerRadius="28dp"
-        app:cardElevation="4dp"
-        app:strokeWidth="0dp"
-        app:layout_scrollFlags="scroll">
+        <!-- Search Bar Trigger -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/searchCard"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="20dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp"
+            app:strokeWidth="0dp">
 
-        <EditText
-            android:id="@+id/searchEditText"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="20dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    app:srcCompat="@drawable/ic_search_24"
+                    app:tint="@color/text_tertiary" />
+
+                <TextView
+                    android:id="@+id/searchHintText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Search JioSaavn..."
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="15sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Pinned Tabs -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@android:color/transparent"
+            app:tabIndicatorColor="@color/blue"
+            app:tabSelectedTextColor="@color/text_primary"
+            app:tabTextColor="@color/text_secondary"
+            app:tabIndicatorFullWidth="false"
+            app:tabRippleColor="@android:color/transparent" />
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <!-- Scrollable Content Area with Search History Overlay -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@android:color/transparent"
-            android:drawableStart="@drawable/ic_search_24"
-            android:drawablePadding="12dp"
-            android:hint="Search your library..."
-            android:paddingHorizontal="20dp"
-            android:singleLine="true"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_tertiary"
-            android:textSize="15sp"
-            android:inputType="text"
-            android:importantForAutofill="no" />
-    </com.google.android.material.card.MaterialCardView>
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@android:color/transparent"
-        app:tabIndicatorColor="@color/blue"
-        app:tabSelectedTextColor="@color/text_primary"
-        app:tabTextColor="@color/text_secondary"
-        app:tabIndicatorFullWidth="false"
-        app:tabRippleColor="@android:color/transparent" />
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-    </com.google.android.material.appbar.AppBarLayout>
+            <!-- Search History Overlay (Covers ViewPager when search is active and empty) -->
+            <LinearLayout
+                android:id="@+id/historyContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/background_light"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:elevation="10dp"
+                android:clickable="true"
+                android:focusable="true">
 
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/viewPager"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/historyHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="20dp"
+                    android:paddingVertical="14dp">
+
+                    <TextView
+                        android:id="@+id/historyTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Recent Searches"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.02"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                    <TextView
+                        android:id="@+id/clearAllBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Clear all"
+                        android:textColor="@color/blue"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:padding="4dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/historyRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false" />
+            </LinearLayout>
+        </FrameLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <!-- Mini Player -->
     <com.google.android.material.card.MaterialCardView
@@ -171,7 +296,7 @@
         app:cardCornerRadius="24dp"
         app:cardElevation="16dp"
         app:strokeWidth="1dp"
-        app:strokeColor="#104D28FF"
+        app:strokeColor="#154F52FF"
         android:layout_gravity="bottom">
 
         <LinearLayout
@@ -180,7 +305,6 @@
             android:background="@drawable/mini_player_bg"
             android:orientation="vertical">
 
-            <!-- Progress Bar -->
             <ProgressBar
                 android:id="@+id/miniProgress"
                 style="?android:attr/progressBarStyleHorizontal"
@@ -249,7 +373,6 @@
                     app:layout_constraintTop_toBottomOf="@+id/miniTitle"
                     tools:text="Artist Name" />
 
-                <!-- Time display -->
                 <TextView
                     android:id="@+id/miniTime"
                     android:layout_width="wrap_content"
@@ -262,7 +385,6 @@
                     app:layout_constraintEnd_toStartOf="@+id/miniPrev"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- Previous -->
                 <ImageView
                     android:id="@+id/miniPrev"
                     android:layout_width="36dp"
@@ -275,7 +397,6 @@
                     app:srcCompat="@drawable/ic_skip_previous_24"
                     app:tint="@color/text_secondary" />
 
-                <!-- Play/Pause -->
                 <ImageView
                     android:id="@+id/miniPlayPause"
                     android:layout_width="44dp"
@@ -288,7 +409,6 @@
                     app:srcCompat="@drawable/ic_play_arrow_24"
                     app:tint="@color/blue" />
 
-                <!-- Next -->
                 <ImageView
                     android:id="@+id/miniNext"
                     android:layout_width="36dp"
@@ -305,4 +425,4 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</FrameLayout>

@@ -48,6 +48,7 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportPostponeEnterTransition();
         EdgeToEdge.enable(this);
         binding = ActivityPlayerBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -134,8 +135,23 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
         binding.favBtn.setOnClickListener(v -> {
             Song currentSong = playerManager.getCurrentSong();
             if (currentSong != null) {
+                boolean wasFav = FavoritesManager.getInstance(this).isFavorite(currentSong.id);
                 FavoritesManager.getInstance(this).toggleFavorite(currentSong.id);
+                if (currentSong.isOnline) {
+                    if (!wasFav) {
+                        FavoritesManager.getInstance(this).saveOnlineFavorite(String.valueOf(currentSong.id), currentSong);
+                    } else {
+                        FavoritesManager.getInstance(this).removeOnlineFavorite(String.valueOf(currentSong.id));
+                    }
+                }
                 updateFavoriteIcon(currentSong);
+                
+                // Animate heart
+                binding.favBtn.animate()
+                        .scaleX(1.4f).scaleY(1.4f)
+                        .setDuration(150)
+                        .withEndAction(() -> binding.favBtn.animate().scaleX(1f).scaleY(1f).setDuration(150).start())
+                        .start();
             }
         });
 
@@ -148,20 +164,54 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
             if (currentSong != null) {
                 boolean isFav = FavoritesManager.getInstance(this).isFavorite(currentSong.id);
                 popupMenu.getMenu().findItem(R.id.menu_favorite).setTitle(isFav ? "Remove from Favorites" : "Add to Favorites");
+                
+                android.view.MenuItem downloadItem = popupMenu.getMenu().findItem(R.id.menu_download);
+                if (downloadItem != null) {
+                    downloadItem.setVisible(currentSong.isOnline);
+                }
             }
 
             popupMenu.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
                 if (id == R.id.menu_favorite && currentSong != null) {
+                    boolean wasFav = FavoritesManager.getInstance(this).isFavorite(currentSong.id);
                     FavoritesManager.getInstance(this).toggleFavorite(currentSong.id);
+                    if (currentSong.isOnline) {
+                        if (!wasFav) {
+                            FavoritesManager.getInstance(this).saveOnlineFavorite(String.valueOf(currentSong.id), currentSong);
+                        } else {
+                            FavoritesManager.getInstance(this).removeOnlineFavorite(String.valueOf(currentSong.id));
+                        }
+                    }
                     updateFavoriteIcon(currentSong);
                 } else if (id == R.id.menu_share && currentSong != null) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                    shareIntent.setType("audio/*");
-                    android.net.Uri contentUri = android.content.ContentUris.withAppendedId(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, currentSong.id);
-                    shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    if (currentSong.isOnline) {
+                        shareIntent.setType("text/plain");
+                        shareIntent.putExtra(Intent.EXTRA_TEXT, "Listen to " + currentSong.title + " by " + currentSong.artist + "\n" + currentSong.data);
+                    } else {
+                        shareIntent.setType("audio/*");
+                        android.net.Uri contentUri = android.content.ContentUris.withAppendedId(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, currentSong.id);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
                     startActivity(Intent.createChooser(shareIntent, "Share " + currentSong.title));
+                } else if (id == R.id.menu_download && currentSong != null && currentSong.isOnline) {
+                    if (currentSong.data != null && !currentSong.data.isEmpty()) {
+                        android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(android.net.Uri.parse(currentSong.data));
+                        request.setTitle(currentSong.title);
+                        request.setDescription("Downloading " + currentSong.artist);
+                        request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                        request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, currentSong.title + ".mp3");
+                        
+                        android.app.DownloadManager manager = (android.app.DownloadManager) getSystemService(android.content.Context.DOWNLOAD_SERVICE);
+                        if (manager != null) {
+                            manager.enqueue(request);
+                            Toast.makeText(this, "Download started", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(this, "Download URL not available", Toast.LENGTH_SHORT).show();
+                    }
                 }
                 return true;
             });
@@ -274,6 +324,7 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
                     @Override
                     public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
                         binding.imageAlbumArtPlayer.setImageBitmap(resource);
+                        supportStartPostponedEnterTransition();
                         Palette.from(resource).generate(palette -> {
                             if (palette != null) {
                                 // Prefer Vibrant, then LightVibrant, then Muted
@@ -290,6 +341,7 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
                         binding.imageAlbumArtPlayer.setImageResource(R.drawable.placeholder_img);
+                        supportStartPostponedEnterTransition();
                         binding.imageAlbumArtPlayer.setPadding(0, 0, 0, 0);
                         binding.imageAlbumArtPlayer.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
 //                        binding.bgAalbumArt.setImageDrawable(null);

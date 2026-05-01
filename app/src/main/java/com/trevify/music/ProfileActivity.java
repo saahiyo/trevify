@@ -91,7 +91,7 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
     @Override public void onProgressUpdate(long currentPosition, long duration) {}
 
     @Override
-    public void onItemClick(int position) {
+    public void onItemClick(int position, android.view.View view) {
         // Find the songs from the adapter
         if (binding.recyclerViewRecent.getAdapter() instanceof SongAdapter) {
             java.util.List<Song> songs = ((SongAdapter) binding.recyclerViewRecent.getAdapter()).getSongs();

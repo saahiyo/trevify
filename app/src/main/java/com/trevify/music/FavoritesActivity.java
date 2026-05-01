@@ -65,6 +65,11 @@ public class FavoritesActivity extends AppCompatActivity implements SongAdapter.
                 favoriteSongs.add(song);
             }
         }
+        
+        List<Song> onlineFavs = favManager.getOnlineFavorites();
+        if (onlineFavs != null) {
+            favoriteSongs.addAll(onlineFavs);
+        }
 
         if (favoriteSongs.isEmpty()) {
             binding.recyclerViewFavorites.setVisibility(View.GONE);
@@ -130,7 +135,7 @@ public class FavoritesActivity extends AppCompatActivity implements SongAdapter.
     }
 
     @Override
-    public void onItemClick(int position) {
+    public void onItemClick(int position, View view) {
         Intent intent = new Intent(this, playerActivity.class);
         intent.putParcelableArrayListExtra("songList", new ArrayList<>(favoriteSongs));
         intent.putExtra("position", position);
@@ -139,6 +144,10 @@ public class FavoritesActivity extends AppCompatActivity implements SongAdapter.
 
     @Override
     public void onSongChanged(Song song) {
+        if (binding.recyclerViewFavorites.getAdapter() instanceof SongAdapter) {
+            ((SongAdapter) binding.recyclerViewFavorites.getAdapter()).setPlayingSong(song);
+        }
+
         binding.miniPlayer.setVisibility(View.VISIBLE);
         binding.miniTitle.setText(song.title);
         binding.miniArtist.setText(song.artist);

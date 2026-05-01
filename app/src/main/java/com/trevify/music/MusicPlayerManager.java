@@ -1,12 +1,16 @@
 package com.trevify.music;
 
 import android.content.ComponentName;
+import android.content.ContentUris;
 import android.content.Context;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
+import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
@@ -19,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+@UnstableApi
 public class MusicPlayerManager {
     private static MusicPlayerManager instance;
     private final Context context;
@@ -71,8 +76,6 @@ public class MusicPlayerManager {
                 notifyPlaybackState(player.isPlaying());
                 if (playbackState == Player.STATE_READY) {
                     handler.post(progressRunnable);
-                } else if (playbackState == Player.STATE_ENDED) {
-                    playNext();
                 } else {
                     handler.removeCallbacks(progressRunnable);
                 }
@@ -95,6 +98,7 @@ public class MusicPlayerManager {
                     for (Song s : currentPlaylist) {
                         if (String.valueOf(s.id).equals(mediaItem.mediaId)) {
                             currentIndex = currentPlaylist.indexOf(s);
+                            StatsManager.getInstance(context).logPlay(s.id);
                             notifySongChanged(s);
                             break;
                         }
@@ -130,42 +134,71 @@ public class MusicPlayerManager {
         if (isShuffle) {
             this.currentPlaylist = new ArrayList<>(songs);
             Collections.shuffle(this.currentPlaylist);
-            // Move the selected song to the front or find its new index
             Song startSong = songs.get(startIndex);
             this.currentIndex = currentPlaylist.indexOf(startSong);
         } else {
             this.currentPlaylist = new ArrayList<>(songs);
             this.currentIndex = startIndex;
         }
-        playCurrent();
+
+        if (player != null) {
+            List<MediaItem> mediaItems = new ArrayList<>();
+            for (Song song : currentPlaylist) {
+                mediaItems.add(createMediaItem(song));
+            }
+            player.setMediaItems(mediaItems, currentIndex, 0);
+            player.prepare();
+            player.play();
+        }
+    }
+
+    private MediaItem createMediaItem(Song song) {
+        Uri artworkUri;
+        if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
+            artworkUri = Uri.parse(song.albumArtUrl);
+        } else {
+            artworkUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        }
+
+        MediaMetadata metadata = new MediaMetadata.Builder()
+                .setTitle(song.title)
+                .setArtist(song.artist)
+                .setAlbumTitle(song.album)
+                .setArtworkUri(artworkUri)
+                .build();
+
+        return new MediaItem.Builder()
+                .setMediaId(String.valueOf(song.id))
+                .setUri(song.data)
+                .setMediaMetadata(metadata)
+                .build();
     }
 
     private void playCurrent() {
         if (player == null || currentIndex < 0 || currentIndex >= currentPlaylist.size()) return;
-        Song song = currentPlaylist.get(currentIndex);
-        
-        MediaItem mediaItem = new MediaItem.Builder()
-                .setMediaId(String.valueOf(song.id))
-                .setUri(song.data)
-                .build();
-        
-        player.setMediaItem(mediaItem);
+        player.seekTo(currentIndex, 0);
         player.prepare();
         player.play();
-        StatsManager.getInstance(context).logPlay(song.id);
-        notifySongChanged(song);
     }
 
     public void playNext() {
-        if (currentPlaylist.isEmpty()) return;
-        currentIndex = (currentIndex + 1) % currentPlaylist.size();
-        playCurrent();
+        if (player != null) {
+            if (player.hasNextMediaItem()) {
+                player.seekToNext();
+            } else if (!currentPlaylist.isEmpty()) {
+                player.seekTo(0, 0);
+            }
+        }
     }
 
     public void playPrevious() {
-        if (currentPlaylist.isEmpty()) return;
-        currentIndex = (currentIndex - 1 + currentPlaylist.size()) % currentPlaylist.size();
-        playCurrent();
+        if (player != null) {
+            if (player.hasPreviousMediaItem()) {
+                player.seekToPrevious();
+            } else if (!currentPlaylist.isEmpty()) {
+                player.seekTo(currentPlaylist.size() - 1, 0);
+            }
+        }
     }
 
     public void togglePlayPause() {
@@ -179,18 +212,23 @@ public class MusicPlayerManager {
 
     public void toggleShuffle() {
         isShuffle = !isShuffle;
+        Song currentSong = getCurrentSong();
         if (isShuffle) {
-            Song currentSong = getCurrentSong();
             Collections.shuffle(currentPlaylist);
-            if (currentSong != null) {
-                currentIndex = currentPlaylist.indexOf(currentSong);
-            }
         } else {
-            Song currentSong = getCurrentSong();
             currentPlaylist = new ArrayList<>(originalList);
-            if (currentSong != null) {
-                currentIndex = currentPlaylist.indexOf(currentSong);
+        }
+        
+        if (currentSong != null) {
+            currentIndex = currentPlaylist.indexOf(currentSong);
+        }
+
+        if (player != null) {
+            List<MediaItem> mediaItems = new ArrayList<>();
+            for (Song song : currentPlaylist) {
+                mediaItems.add(createMediaItem(song));
             }
+            player.setMediaItems(mediaItems, currentIndex, player.getCurrentPosition());
         }
     }
 

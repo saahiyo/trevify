@@ -26,6 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
+            android:transitionName="album_art_transition"
             android:background="@color/surface_variant"
             app:srcCompat="@drawable/placeholder_img"
             tools:srcCompat="@tools:sample/avatars" />

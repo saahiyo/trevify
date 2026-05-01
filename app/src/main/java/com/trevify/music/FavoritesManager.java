@@ -24,18 +24,74 @@ public class FavoritesManager {
     }
 
     public boolean isFavorite(long songId) {
-        Set<String> favorites = new HashSet<>(sharedPreferences.getStringSet(KEY_FAVORITES, new HashSet<>()));
-        return favorites.contains(String.valueOf(songId));
+        return isFavorite(String.valueOf(songId));
     }
 
     public void toggleFavorite(long songId) {
+        toggleFavorite(String.valueOf(songId));
+    }
+
+    public boolean isFavorite(String songId) {
         Set<String> favorites = new HashSet<>(sharedPreferences.getStringSet(KEY_FAVORITES, new HashSet<>()));
-        String idStr = String.valueOf(songId);
-        if (favorites.contains(idStr)) {
-            favorites.remove(idStr);
+        return favorites.contains(songId);
+    }
+
+    public void toggleFavorite(String songId) {
+        Set<String> favorites = new HashSet<>(sharedPreferences.getStringSet(KEY_FAVORITES, new HashSet<>()));
+        if (favorites.contains(songId)) {
+            favorites.remove(songId);
         } else {
-            favorites.add(idStr);
+            favorites.add(songId);
         }
         sharedPreferences.edit().putStringSet(KEY_FAVORITES, favorites).apply();
+    }
+
+    public void saveOnlineFavorite(String stringId, Song song) {
+        try {
+            org.json.JSONObject json = new org.json.JSONObject();
+            json.put("id", song.id);
+            json.put("title", song.title);
+            json.put("artist", song.artist);
+            json.put("album", song.album);
+            json.put("data", song.data);
+            json.put("albumId", song.albumId);
+            json.put("duration", song.duration);
+            json.put("albumArtUrl", song.albumArtUrl);
+            json.put("isOnline", song.isOnline);
+            sharedPreferences.edit().putString("online_" + stringId, json.toString()).apply();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void removeOnlineFavorite(String stringId) {
+        sharedPreferences.edit().remove("online_" + stringId).apply();
+    }
+
+    public java.util.List<Song> getOnlineFavorites() {
+        java.util.List<Song> list = new java.util.ArrayList<>();
+        java.util.Map<String, ?> allEntries = sharedPreferences.getAll();
+        for (java.util.Map.Entry<String, ?> entry : allEntries.entrySet()) {
+            if (entry.getKey().startsWith("online_")) {
+                try {
+                    org.json.JSONObject json = new org.json.JSONObject((String) entry.getValue());
+                    Song song = new Song(
+                            json.optLong("id"),
+                            json.optString("title"),
+                            json.optString("artist"),
+                            json.optString("album"),
+                            json.optString("data"),
+                            json.optLong("albumId"),
+                            json.optLong("duration")
+                    );
+                    song.albumArtUrl = json.optString("albumArtUrl");
+                    song.isOnline = json.optBoolean("isOnline");
+                    list.add(song);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return list;
     }
 }

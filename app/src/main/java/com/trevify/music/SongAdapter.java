@@ -24,9 +24,10 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
     private List<Song> fullList;
     private OnItemClickListerner listener;
     private Song playingSong;
+    private int lastPosition = -1;
 
     public interface OnItemClickListerner {
-        void onItemClick(int position);
+        void onItemClick(int position, View view);
     }
 
     public SongAdapter(List<Song> songs, OnItemClickListerner listener) {
@@ -62,8 +63,27 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
     }
 
     public void setPlayingSong(Song song) {
+        Song oldPlayingSong = this.playingSong;
         this.playingSong = song;
-        notifyDataSetChanged();
+        
+        // Notify only the items that need to change color
+        if (oldPlayingSong != null) {
+            int oldPos = findSongPosition(oldPlayingSong.id);
+            if (oldPos != -1) notifyItemChanged(oldPos);
+        }
+        if (playingSong != null) {
+            int newPos = findSongPosition(playingSong.id);
+            if (newPos != -1) notifyItemChanged(newPos);
+        }
+    }
+
+    private int findSongPosition(long songId) {
+        for (int idx = 0; idx < songs.size(); idx++) {
+            if (songs.get(idx).id == songId) {
+                return idx;
+            }
+        }
+        return -1;
     }
 
     @NonNull
@@ -104,7 +124,15 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
 
         // Toggle favorite on heart tap
         holder.binding.favIcon.setOnClickListener(v -> {
+            boolean wasFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
             FavoritesManager.getInstance(v.getContext()).toggleFavorite(song.id);
+            if (song.isOnline) {
+                if (!wasFav) {
+                    FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(String.valueOf(song.id), song);
+                } else {
+                    FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(String.valueOf(song.id));
+                }
+            }
             updateFavIcon(holder, song);
             boolean nowFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
             Toast.makeText(v.getContext(), nowFav ? "Added to favorites" : "Removed from favorites", Toast.LENGTH_SHORT).show();
@@ -116,28 +144,77 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
 
             boolean isFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
             popupMenu.getMenu().findItem(R.id.menu_favorite).setTitle(isFav ? "Remove from Favorites" : "Add to Favorites");
+            android.view.MenuItem downloadItem = popupMenu.getMenu().findItem(R.id.menu_download);
+            if (downloadItem != null) {
+                downloadItem.setVisible(song.isOnline);
+            }
 
             popupMenu.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
                 if (id == R.id.menu_play) {
-                    listener.onItemClick(position);
+                    listener.onItemClick(position, holder.binding.imageAlbumArt);
                 } else if (id == R.id.menu_favorite) {
+                    boolean wasFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
                     FavoritesManager.getInstance(v.getContext()).toggleFavorite(song.id);
+                    if (song.isOnline) {
+                        if (!wasFav) {
+                            FavoritesManager.getInstance(v.getContext()).saveOnlineFavorite(String.valueOf(song.id), song);
+                        } else {
+                            FavoritesManager.getInstance(v.getContext()).removeOnlineFavorite(String.valueOf(song.id));
+                        }
+                    }
                     updateFavIcon(holder, song);
                     boolean nowFav = FavoritesManager.getInstance(v.getContext()).isFavorite(song.id);
                     Toast.makeText(v.getContext(), nowFav ? "Added to favorites" : "Removed from favorites", Toast.LENGTH_SHORT).show();
                 } else if (id == R.id.menu_share) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                    shareIntent.setType("audio/*");
-                    Uri contentUri = ContentUris.withAppendedId(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id);
-                    shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    if (song.isOnline) {
+                        shareIntent.setType("text/plain");
+                        shareIntent.putExtra(Intent.EXTRA_TEXT, "Listen to " + song.title + " by " + song.artist + "\n" + song.data);
+                    } else {
+                        shareIntent.setType("audio/*");
+                        Uri contentUri = ContentUris.withAppendedId(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
                     v.getContext().startActivity(Intent.createChooser(shareIntent, "Share " + song.title));
+                } else if (id == R.id.menu_download && song.isOnline) {
+                    if (song.data != null && !song.data.isEmpty()) {
+                        android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(android.net.Uri.parse(song.data));
+                        request.setTitle(song.title);
+                        request.setDescription("Downloading " + song.artist);
+                        request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                        request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, song.title + ".mp3");
+                        
+                        android.app.DownloadManager manager = (android.app.DownloadManager) v.getContext().getSystemService(android.content.Context.DOWNLOAD_SERVICE);
+                        if (manager != null) {
+                            manager.enqueue(request);
+                            Toast.makeText(v.getContext(), "Download started", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(v.getContext(), "Download URL not available", Toast.LENGTH_SHORT).show();
+                    }
                 }
                 return true;
             });
             popupMenu.show();
         });
+
+        setAnimation(holder.binding.getRoot(), position);
+    }
+
+    private void setAnimation(View view, int position) {
+        if (position > lastPosition) {
+            view.setAlpha(0f);
+            view.setTranslationY(50f);
+            view.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(400)
+                    .setStartDelay(Math.min(position * 10L, 300))
+                    .start();
+            lastPosition = position;
+        }
     }
 
     private void updateFavIcon(SongViewholder holder, Song song) {
@@ -176,7 +253,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
                     if (listerner!=null){
                      int pos=getAdapterPosition();
                      if (pos!=RecyclerView.NO_POSITION){
-                         listener.onItemClick(pos);
+                         listener.onItemClick(pos, binding.imageAlbumArt);
                      }
 
                      }
