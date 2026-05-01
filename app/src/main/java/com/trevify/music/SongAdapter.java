@@ -34,6 +34,12 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         this.listener = listener;
     }
 
+    public void setSongs(List<Song> songs) {
+        this.songs = songs;
+        this.fullList = new ArrayList<>(songs);
+        notifyDataSetChanged();
+    }
+
     public void filter(String query) {
         songs = new ArrayList<>();
         if (query.isEmpty()) {

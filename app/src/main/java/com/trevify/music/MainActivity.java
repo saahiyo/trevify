@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -52,6 +53,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 }
             });
 
+    private OnlineTrackAdapter onlineAdapter;
+    private SongAdapter localAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,32 +76,135 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             return insets;
         });
 
+        // Initialize adapters
+        localAdapter = new SongAdapter(new ArrayList<>(), this);
         binding.recyclerViewSongs.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerViewSongs.setAdapter(localAdapter);
+
+        onlineAdapter = new OnlineTrackAdapter((track, position) -> {
+            // Convert to Song and play
+            List<Song> converted = new ArrayList<>();
+            for (int i = 0; i < onlineAdapter.getItemCount(); i++) {
+                SaavnTrack t = onlineAdapter.getTrack(i);
+                Song s = new Song(
+                    t.id.hashCode(),
+                    t.name,
+                    t.artist,
+                    t.albumName,
+                    t.downloadUrl,
+                    t.albumName.hashCode(),
+                    t.durationMs
+                );
+                s.albumArtUrl = t.albumArtUrl;
+                s.isOnline = true;
+                converted.add(s);
+            }
+            playerManager.setPlaylist(converted, position);
+        });
+        binding.recyclerViewSpotify.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerViewSpotify.setAdapter(onlineAdapter);
 
         checkPermissionAndLoadSong();
 
+        setupTabs();
         setupMiniPlayer();
-
         setupSearch();
 
         binding.favoritesBtn.setOnClickListener(v -> startActivity(new Intent(this, FavoritesActivity.class)));
         binding.profileBtn.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
     }
 
+    private void setupTabs() {
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Explore"));
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Library"));
+
+        // Set initial state
+        binding.exploreContainer.setVisibility(android.view.View.VISIBLE);
+        binding.libraryContainer.setVisibility(android.view.View.GONE);
+        binding.searchEditText.setHint("Search JioSaavn...");
+
+        binding.tabLayout.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                if (tab.getPosition() == 0) {
+                    binding.exploreContainer.setVisibility(android.view.View.VISIBLE);
+                    binding.libraryContainer.setVisibility(android.view.View.GONE);
+                    binding.searchEditText.setHint("Search JioSaavn...");
+                    // Refresh online search if text exists
+                    String query = binding.searchEditText.getText().toString();
+                    if (!query.isEmpty()) performOnlineSearch(query);
+                } else {
+                    binding.exploreContainer.setVisibility(android.view.View.GONE);
+                    binding.libraryContainer.setVisibility(android.view.View.VISIBLE);
+                    binding.searchEditText.setHint("Search your library...");
+                    // Filter local list
+                    localAdapter.filter(binding.searchEditText.getText().toString());
+                }
+            }
+            @Override public void onTabUnselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+            @Override public void onTabReselected(com.google.android.material.tabs.TabLayout.Tab tab) {}
+        });
+    }
+
     private void setupSearch() {
         binding.searchEditText.addTextChangedListener(new TextWatcher() {
+            private final Handler handler = new Handler(android.os.Looper.getMainLooper());
+            private Runnable workRunnable;
+
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (adapter instanceof SongAdapter) {
-                    ((SongAdapter) adapter).filter(s.toString());
+                if (binding.tabLayout.getSelectedTabPosition() == 1) {
+                    // Local search
+                    localAdapter.filter(s.toString());
+                } else {
+                    // Online search with debounce
+                    if (workRunnable != null) handler.removeCallbacks(workRunnable);
+                    workRunnable = () -> performOnlineSearch(s.toString());
+                    handler.postDelayed(workRunnable, 500);
                 }
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+        
+        // Initial fetch for explore
+        performOnlineSearch("trending");
+    }
+
+    private void performOnlineSearch(String query) {
+        if (query.trim().isEmpty()) {
+            binding.exploreHint.setVisibility(android.view.View.VISIBLE);
+            binding.recyclerViewSpotify.setVisibility(android.view.View.GONE);
+            return;
+        }
+
+        binding.exploreHint.setVisibility(android.view.View.GONE);
+        binding.recyclerViewSpotify.setVisibility(android.view.View.GONE);
+        binding.exploreLoading.setVisibility(android.view.View.VISIBLE);
+
+        SaavnApi.searchSongs(query, 30, new SaavnApi.SearchCallback() {
+            @Override
+            public void onSuccess(List<SaavnTrack> tracks) {
+                binding.exploreLoading.setVisibility(android.view.View.GONE);
+                binding.recyclerViewSpotify.setVisibility(android.view.View.VISIBLE);
+                onlineAdapter.setTracks(tracks);
+                
+                if (tracks.isEmpty()) {
+                    binding.exploreHint.setText("No results found for '" + query + "'");
+                    binding.exploreHint.setVisibility(android.view.View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                binding.exploreLoading.setVisibility(android.view.View.GONE);
+                binding.exploreHint.setText("Error: " + error);
+                binding.exploreHint.setVisibility(android.view.View.VISIBLE);
+            }
         });
     }
 
@@ -263,8 +370,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         } else {
             binding.recyclerViewSongs.setVisibility(android.view.View.VISIBLE);
             binding.emptyState.setVisibility(android.view.View.GONE);
-            adapter = new SongAdapter(songList, this);
-            binding.recyclerViewSongs.setAdapter(adapter);
+            localAdapter.setSongs(songList);
             binding.songCount.setText(songList.size() + " Songs");
         }
     }

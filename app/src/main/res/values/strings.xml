@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">music</string>
     <string name="get_started">Get Started</string>
-    <string name="explorer_artist">Explorer Artist</string>
+    <string name="explorer_artist">Explore Music</string>
     <string name="title">title</string>
     <string name="artist">artist</string>
 </resources>

@@ -13,6 +13,8 @@ public class Song implements Parcelable {
     public String data;
     public long albumId;
     public long duration;
+    public String albumArtUrl;
+    public boolean isOnline;
 
     public Song(long id, String title, String artist, String album, String data, long albumId, long duration) {
         this.id = id;
@@ -22,6 +24,8 @@ public class Song implements Parcelable {
         this.data = data;
         this.albumId = albumId;
         this.duration = duration;
+        this.albumArtUrl = "";
+        this.isOnline = false;
     }
 
     protected Song(Parcel in) {
@@ -32,6 +36,8 @@ public class Song implements Parcelable {
         data = in.readString();
         albumId = in.readLong();
         duration = in.readLong();
+        albumArtUrl = in.readString();
+        isOnline = in.readByte() != 0;
     }
 
     public static final Creator<Song> CREATOR = new Creator<Song>() {
@@ -60,5 +66,8 @@ public class Song implements Parcelable {
         dest.writeString(data);
         dest.writeLong(albumId);
         dest.writeLong(duration);
+        dest.writeString(albumArtUrl);
+        dest.writeByte((byte) (isOnline ? 1 : 0));
     }
 }
+
