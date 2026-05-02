@@ -43,6 +43,7 @@
     <color name="text_tertiary">@color/outline</color>
     <color name="divider">#1A008C86</color>
     <color name="glass_bg">#E6FFFFFF</color>
+    <color name="main_content_overlay">#EAF8FBF7</color>
     
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>

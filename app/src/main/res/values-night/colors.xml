@@ -38,4 +38,5 @@
     <color name="text_tertiary">@color/outline</color>
     <color name="divider">#334B47</color>
     <color name="glass_bg">#1A071615</color>
+    <color name="main_content_overlay">#E6071615</color>
 </resources>

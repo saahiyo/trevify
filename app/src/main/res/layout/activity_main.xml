@@ -15,11 +15,11 @@
         android:scaleType="centerCrop"
         android:alpha="0.24" />
 
-    <!-- Light overlay to ensure text readability while letting colors show through -->
+    <!-- Theme overlay to ensure text readability while letting colors show through -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#EAF8FBF7" />
+        android:background="@color/main_content_overlay" />
 
     <View
         android:id="@+id/headerBg"
