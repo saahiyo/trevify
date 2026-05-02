@@ -273,10 +273,11 @@
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="108dp"
         android:visibility="gone"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="16dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
         app:strokeWidth="1dp"
-        app:strokeColor="#154F52FF"
+        app:strokeColor="@color/divider"
         android:layout_gravity="bottom">
 
         <LinearLayout
@@ -297,16 +298,16 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="76dp"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="8dp">
+                android:layout_height="72dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="12dp"
+                android:paddingVertical="7dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/miniArtCard"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginStart="4dp"
-                    app:cardCornerRadius="14dp"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    app:cardCornerRadius="13dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="0dp"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -326,7 +327,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginEnd="12dp"
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:textColor="@color/text_primary"
@@ -346,7 +347,7 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="@+id/miniTitle"
                     app:layout_constraintStart_toStartOf="@+id/miniTitle"
@@ -357,9 +358,9 @@
                     android:id="@+id/miniTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
+                    android:layout_marginEnd="8dp"
                     android:textColor="@color/text_tertiary"
-                    android:textSize="10sp"
+                    android:textSize="11sp"
                     android:text="0:00 / 0:00"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/miniPrev"
@@ -367,8 +368,8 @@
 
                 <ImageView
                     android:id="@+id/miniPrev"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="8dp"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -379,8 +380,8 @@
 
                 <ImageView
                     android:id="@+id/miniPlayPause"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -391,9 +392,8 @@
 
                 <ImageView
                     android:id="@+id/miniNext"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="4dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="8dp"
                     app:layout_constraintBottom_toBottomOf="parent"
