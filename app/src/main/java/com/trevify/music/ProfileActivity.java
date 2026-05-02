@@ -6,12 +6,14 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.ViewGroup;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.trevify.music.databinding.ActivityProfileBinding;
@@ -25,20 +27,24 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
     private MusicPlayerManager playerManager;
     private static final String PREF_NAME = "theme_prefs";
     private static final String KEY_DARK_MODE = "dark_mode";
+    private int appBarTopMargin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        themePrefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        applyTheme(themePrefs.getBoolean(KEY_DARK_MODE, false));
         EdgeToEdge.enable(this);
         binding = ActivityProfileBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        themePrefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         playerManager = MusicPlayerManager.getInstance(this);
+        appBarTopMargin = ((ViewGroup.MarginLayoutParams) binding.backBtn.getLayoutParams()).topMargin;
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.main, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, 0, systemBars.right, systemBars.bottom);
+            updateAppBarTopInset(systemBars.top);
             return insets;
         });
 
@@ -193,10 +199,27 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
     }
 
     private void applyTheme(boolean isDark) {
+        WindowInsetsControllerCompat controller =
+                ViewCompat.getWindowInsetsController(getWindow().getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(!isDark);
+            controller.setAppearanceLightNavigationBars(!isDark);
+        }
+
         if (isDark) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
         } else {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
+    }
+
+    private void updateAppBarTopInset(int topInset) {
+        ViewGroup.MarginLayoutParams params =
+                (ViewGroup.MarginLayoutParams) binding.backBtn.getLayoutParams();
+        int targetTopMargin = appBarTopMargin + topInset;
+        if (params.topMargin != targetTopMargin) {
+            params.topMargin = targetTopMargin;
+            binding.backBtn.setLayoutParams(params);
         }
     }
 }
