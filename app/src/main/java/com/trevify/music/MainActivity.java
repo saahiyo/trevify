@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.MotionEvent;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -40,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private String lastLoadedExploreQuery = null;
     private int searchRequestGeneration = 0;
     private int selectedContentNavItemId = R.id.nav_home;
+    private float miniPlayerDownY = 0f;
+    private boolean miniPlayerDragging = false;
     
     private android.view.View exploreContainer;
     private android.view.View libraryContainer;
@@ -194,7 +197,15 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 s.sourceId = t.id;
                 converted.add(s);
             }
-            playerManager.setPlaylist(converted, position);
+            Song selectedSong = converted.get(position);
+            Song currentSong = playerManager.getCurrentSong();
+            if (currentSong == null || !currentSong.getStableKey().equals(selectedSong.getStableKey())) {
+                playerManager.setPlaylist(converted, position);
+            }
+            Intent intent = new Intent(this, playerActivity.class);
+            intent.putParcelableArrayListExtra("songList", new ArrayList<>(converted));
+            intent.putExtra("position", position);
+            startActivity(intent);
         });
         recyclerViewSpotify.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewSpotify.setAdapter(onlineAdapter);
@@ -458,14 +469,60 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
     private void setupMiniPlayer() {
 
-        binding.miniPlayer.setOnClickListener(v -> {
-            Intent intent = new Intent(this, playerActivity.class);
-            startActivity(intent);
+        binding.miniPlayer.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    miniPlayerDownY = event.getRawY();
+                    miniPlayerDragging = false;
+                    v.animate().cancel();
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float deltaY = event.getRawY() - miniPlayerDownY;
+                    if (deltaY > dp(6)) {
+                        miniPlayerDragging = true;
+                        v.setTranslationY(deltaY);
+                        v.setAlpha(Math.max(0.35f, 1f - (deltaY / dp(180))));
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    float totalDeltaY = event.getRawY() - miniPlayerDownY;
+                    if (miniPlayerDragging && totalDeltaY > dp(72)) {
+                        dismissMiniPlayer();
+                    } else {
+                        v.animate()
+                                .translationY(0f)
+                                .alpha(1f)
+                                .setDuration(160)
+                                .start();
+                        if (!miniPlayerDragging && event.getActionMasked() == MotionEvent.ACTION_UP) {
+                            Intent intent = new Intent(this, playerActivity.class);
+                            startActivity(intent);
+                        }
+                    }
+                    miniPlayerDragging = false;
+                    return true;
+                default:
+                    return false;
+            }
         });
 
         binding.miniPlayPause.setOnClickListener(v -> playerManager.togglePlayPause());
         binding.miniPrev.setOnClickListener(v -> playerManager.playPrevious());
         binding.miniNext.setOnClickListener(v -> playerManager.playNext());
+    }
+
+    private void dismissMiniPlayer() {
+        binding.miniPlayer.animate()
+                .translationY(binding.miniPlayer.getHeight() + dp(24))
+                .alpha(0f)
+                .setDuration(180)
+                .withEndAction(() -> {
+                    binding.miniPlayer.setVisibility(android.view.View.GONE);
+                    binding.miniPlayer.setTranslationY(0f);
+                    binding.miniPlayer.setAlpha(1f);
+                })
+                .start();
     }
 
     @Override
@@ -493,6 +550,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         if (localAdapter != null) localAdapter.setPlayingSong(song);
         if (onlineAdapter != null) onlineAdapter.setPlayingSong(song);
         
+        binding.miniPlayer.animate().cancel();
+        binding.miniPlayer.setTranslationY(0f);
+        binding.miniPlayer.setAlpha(1f);
         binding.miniPlayer.setVisibility(android.view.View.VISIBLE);
         binding.miniTitle.setText(song.title);
         binding.miniArtist.setText(song.artist);

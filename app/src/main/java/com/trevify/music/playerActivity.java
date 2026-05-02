@@ -76,6 +76,11 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
             Song current = playerManager.getCurrentSong();
             if (current == null || !current.getStableKey().equals(songList.get(startIndex).getStableKey())) {
                 playerManager.setPlaylist(songList, startIndex);
+            } else {
+                updateUI(current);
+                updateFavoriteIcon(current);
+                onPlaybackStateChanged(playerManager.isPlaying());
+                onProgressUpdate(playerManager.getCurrentPosition(), playerManager.getDuration());
             }
         } else {
             // Restore from playerManager's existing playlist if possible (e.g. mini player entry)
@@ -85,6 +90,10 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
                 finish();
                 return;
             }
+            updateUI(current);
+            updateFavoriteIcon(current);
+            onPlaybackStateChanged(playerManager.isPlaying());
+            onProgressUpdate(playerManager.getCurrentPosition(), playerManager.getDuration());
         }
 
         binding.waveformSeekBar.setWaveform(createwaveform(), true);
