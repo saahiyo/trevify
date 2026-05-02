@@ -27,6 +27,7 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
     private MusicPlayerManager playerManager;
     private static final String PREF_NAME = "theme_prefs";
     private static final String KEY_DARK_MODE = "dark_mode";
+    private static final int MAX_RECENT_SONGS = 10;
     private int appBarTopMargin;
 
     @Override
@@ -149,6 +150,7 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
                     break;
                 }
             }
+            if (recentSongs.size() >= MAX_RECENT_SONGS) break;
         }
 
         binding.recyclerViewRecent.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
