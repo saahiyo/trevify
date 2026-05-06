@@ -30,6 +30,11 @@
     <color name="brand_soft">#113330</color>
     <color name="brand_warm">#35241D</color>
     <color name="brand_ink">#DCEDEA</color>
+    <color name="splash_text_primary">#F7FFFD</color>
+    <color name="splash_text_secondary">#BFE2DC</color>
+    <color name="splash_chip_fill">#2EFFFFFF</color>
+    <color name="splash_button_start">#31D3CA</color>
+    <color name="splash_button_end">#FF826E</color>
 
     <color name="background_light">#071615</color>
     <color name="surface_variant">#113330</color>
