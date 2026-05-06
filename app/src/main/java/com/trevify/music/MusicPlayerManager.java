@@ -102,7 +102,7 @@ public class MusicPlayerManager {
                     for (Song s : currentPlaylist) {
                         if (s.getStableKey().equals(mediaItem.mediaId)) {
                             currentIndex = currentPlaylist.indexOf(s);
-                            StatsManager.getInstance(context).logPlay(s.id);
+                            StatsManager.getInstance(context).logPlay(s);
                             notifySongChanged(s);
                             break;
                         }

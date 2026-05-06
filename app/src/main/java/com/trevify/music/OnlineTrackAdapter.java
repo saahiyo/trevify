@@ -19,19 +19,51 @@ import java.util.List;
 public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.ViewHolder> {
     private List<SaavnTrack> tracks = new ArrayList<>();
     private OnTrackClickListener listener;
+    private OnArtistClickListener artistClickListener;
     private Song playingSong;
 
     public interface OnTrackClickListener {
         void onPlayClick(SaavnTrack track, int position);
     }
 
+    public interface OnArtistClickListener {
+        void onArtistClick(String artist);
+    }
+
     public OnlineTrackAdapter(OnTrackClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnArtistClickListener(OnArtistClickListener listener) {
+        this.artistClickListener = listener;
     }
 
     public void setTracks(List<SaavnTrack> tracks) {
         this.tracks = tracks;
         notifyDataSetChanged();
+    }
+
+    public int appendTracks(List<SaavnTrack> newTracks) {
+        if (newTracks == null || newTracks.isEmpty()) return 0;
+
+        java.util.HashSet<String> existingIds = new java.util.HashSet<>();
+        for (SaavnTrack track : tracks) {
+            existingIds.add(track.id);
+        }
+
+        int startPosition = tracks.size();
+        int addedCount = 0;
+        for (SaavnTrack track : newTracks) {
+            if (track.id == null || track.id.isEmpty() || existingIds.add(track.id)) {
+                tracks.add(track);
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0) {
+            notifyItemRangeInserted(startPosition, addedCount);
+        }
+        return addedCount;
     }
 
     public SaavnTrack getTrack(int position) {
@@ -89,6 +121,18 @@ public class OnlineTrackAdapter extends RecyclerView.Adapter<OnlineTrackAdapter.
         holder.binding.onlineTitle.setText(android.text.Html.fromHtml(track.name, android.text.Html.FROM_HTML_MODE_LEGACY).toString());
         String decodedArtist = android.text.Html.fromHtml(track.artist, android.text.Html.FROM_HTML_MODE_LEGACY).toString();
         holder.binding.onlineArtist.setText(decodedArtist + " • " + formatTime((int) (track.durationMs / 1000)));
+
+        if (artistClickListener != null) {
+            holder.binding.onlineArtist.setOnClickListener(v -> {
+                String artist = decodedArtist.trim();
+                if (!artist.isEmpty()) {
+                    artistClickListener.onArtistClick(artist);
+                }
+            });
+        } else {
+            holder.binding.onlineArtist.setOnClickListener(null);
+            holder.binding.onlineArtist.setClickable(false);
+        }
 
         // Load album art from URL
         if (track.albumArtUrl != null && !track.albumArtUrl.isEmpty()) {

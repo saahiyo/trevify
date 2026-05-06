@@ -1,6 +1,7 @@
 package com.trevify.music;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
@@ -50,6 +51,7 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
         });
 
         binding.backBtn.setOnClickListener(v -> finish());
+        binding.aboutRow.setOnClickListener(v -> startActivity(new Intent(this, AboutActivity.class)));
 
         setupStats();
         setupThemeSwitch();
@@ -69,10 +71,15 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
 
     @Override
     public void onSongChanged(Song song) {
-        android.net.Uri albumArtUri = android.content.ContentUris.withAppendedId(android.net.Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        Object imageSource;
+        if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
+            imageSource = song.albumArtUrl;
+        } else {
+            imageSource = android.content.ContentUris.withAppendedId(android.net.Uri.parse("content://media/external/audio/albumart"), song.albumId);
+        }
         com.bumptech.glide.Glide.with(this)
                 .asBitmap()
-                .load(albumArtUri)
+                .load(imageSource)
                 .into(new com.bumptech.glide.request.target.CustomTarget<android.graphics.Bitmap>() {
                     @Override
                     public void onResourceReady(@androidx.annotation.NonNull android.graphics.Bitmap resource, @androidx.annotation.Nullable com.bumptech.glide.request.transition.Transition<? super android.graphics.Bitmap> transition) {
@@ -132,17 +139,33 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
 
     private void setupRecentHistory() {
         StatsManager statsManager = StatsManager.getInstance(this);
-        java.util.List<Long> recentIds = statsManager.getRecentIds();
-        if (recentIds.isEmpty()) {
+        java.util.List<Song> recentSongs = statsManager.getRecentSongs();
+        if (recentSongs.isEmpty()) {
+            recentSongs = getRecentLocalSongs(statsManager.getRecentIds());
+        }
+        if (recentSongs.size() > MAX_RECENT_SONGS) {
+            recentSongs = recentSongs.subList(0, MAX_RECENT_SONGS);
+        }
+
+        if (recentSongs.isEmpty()) {
             binding.historyTitle.setVisibility(android.view.View.GONE);
             binding.recyclerViewRecent.setVisibility(android.view.View.GONE);
             return;
         }
 
-        java.util.List<Song> allSongs = getAllSongs(); // I'll add this helper or reuse from elsewhere
+        binding.historyTitle.setVisibility(android.view.View.VISIBLE);
+        binding.recyclerViewRecent.setVisibility(android.view.View.VISIBLE);
+        binding.recyclerViewRecent.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
+        SongAdapter adapter = new SongAdapter(recentSongs, this);
+        binding.recyclerViewRecent.setAdapter(adapter);
+    }
+
+    private java.util.List<Song> getRecentLocalSongs(java.util.List<Long> recentIds) {
         java.util.List<Song> recentSongs = new java.util.ArrayList<>();
+        if (recentIds.isEmpty()) return recentSongs;
+
+        java.util.List<Song> allSongs = getAllSongs();
         
-        // Match IDs to full Song objects
         for (Long id : recentIds) {
             for (Song s : allSongs) {
                 if (s.id == id) {
@@ -150,12 +173,8 @@ public class ProfileActivity extends AppCompatActivity implements MusicPlayerMan
                     break;
                 }
             }
-            if (recentSongs.size() >= MAX_RECENT_SONGS) break;
         }
-
-        binding.recyclerViewRecent.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
-        SongAdapter adapter = new SongAdapter(recentSongs, this);
-        binding.recyclerViewRecent.setAdapter(adapter);
+        return recentSongs;
     }
 
     private java.util.List<Song> getAllSongs() {

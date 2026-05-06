@@ -33,6 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements SongAdapter.OnItemClickListerner, MusicPlayerManager.PlaybackListener {
+    public static final String EXTRA_ARTIST_SEARCH = "com.trevify.music.EXTRA_ARTIST_SEARCH";
+    public static final String EXTRA_ARTIST_SEARCH_ONLINE = "com.trevify.music.EXTRA_ARTIST_SEARCH_ONLINE";
+
     private ActivityMainBinding binding;
     private RecyclerView.Adapter adapter;
     private List<Song> songList;
@@ -41,6 +44,14 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     private String lastLoadedExploreQuery = null;
     private int searchRequestGeneration = 0;
     private int selectedContentNavItemId = R.id.nav_home;
+    private boolean suppressSearchTextWatcher = false;
+    private boolean currentExploreArtistSearch = false;
+    private static final int ONLINE_PAGE_SIZE = 30;
+    private static final int ONLINE_LOAD_MORE_THRESHOLD = 6;
+    private int currentExplorePage = 1;
+    private boolean isLoadingMoreExplore = false;
+    private boolean hasMoreExploreResults = true;
+    private String activeExploreRequestKey = "";
     private float miniPlayerDownY = 0f;
     private boolean miniPlayerDragging = false;
     
@@ -175,6 +186,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
         // Initialize adapters
         localAdapter = new SongAdapter(new ArrayList<>(), this);
+        localAdapter.setOnArtistClickListener(artist -> searchByArtist(artist, false));
         recyclerViewSongs.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewSongs.setAdapter(localAdapter);
 
@@ -207,11 +219,30 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             intent.putExtra("position", position);
             startActivity(intent);
         });
-        recyclerViewSpotify.setLayoutManager(new LinearLayoutManager(this));
+        LinearLayoutManager onlineLayoutManager = new LinearLayoutManager(this);
+        recyclerViewSpotify.setLayoutManager(onlineLayoutManager);
         recyclerViewSpotify.setAdapter(onlineAdapter);
+        recyclerViewSpotify.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@androidx.annotation.NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (dy <= 0) return;
+
+                int totalItemCount = onlineLayoutManager.getItemCount();
+                int lastVisibleItem = onlineLayoutManager.findLastVisibleItemPosition();
+                if (totalItemCount > 0
+                        && lastVisibleItem >= totalItemCount - ONLINE_LOAD_MORE_THRESHOLD) {
+                    loadMoreExploreResults();
+                }
+            }
+        });
         exploreRefresh.setOnRefreshListener(() -> {
             String query = binding.searchEditText.getText().toString();
-            performOnlineSearch(query, true);
+            if (currentExploreArtistSearch) {
+                performArtistSearch(query, true);
+            } else {
+                performOnlineSearch(query, true);
+            }
         });
 
         checkPermissionAndLoadSong();
@@ -222,6 +253,14 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
         binding.favoritesBtn.setOnClickListener(v -> startActivity(new Intent(this, FavoritesActivity.class)));
         binding.profileBtn.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
+        handleArtistSearchIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleArtistSearchIntent(intent);
     }
 
     private void setupNavigation() {
@@ -271,7 +310,11 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                     }
                     binding.searchEditText.setHint("Search JioSaavn...");
                     String query = binding.searchEditText.getText().toString();
-                    performOnlineSearch(query);
+                    if (currentExploreArtistSearch) {
+                        performArtistSearch(query);
+                    } else {
+                        performOnlineSearch(query);
+                    }
                 } else {
                     selectedContentNavItemId = R.id.nav_library;
                     if (binding.bottomNavigation.getSelectedItemId() != R.id.nav_library) {
@@ -320,12 +363,16 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 } else {
                     binding.historyContainer.setVisibility(android.view.View.GONE);
                 }
+                updateSearchChip(s.toString());
+
+                if (suppressSearchTextWatcher) return;
 
                 if (binding.viewPager.getCurrentItem() == 1) {
                     // Local search
                     localAdapter.filter(s.toString());
                     updateSongCount();
                 } else {
+                    currentExploreArtistSearch = false;
                     // Online search with debounce
                     if (workRunnable != null) handler.removeCallbacks(workRunnable);
                     workRunnable = () -> performOnlineSearch(s.toString());
@@ -394,6 +441,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
     }
 
     private void performOnlineSearch(String query, boolean forceRefresh) {
+        currentExploreArtistSearch = false;
         final String finalQuery;
         if (query.trim().isEmpty()) {
             if (binding.searchToolbar.getVisibility() == android.view.View.VISIBLE) {
@@ -418,12 +466,17 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
             return;
         }
 
+        currentExplorePage = 1;
+        hasMoreExploreResults = true;
+        isLoadingMoreExplore = false;
+        activeExploreRequestKey = "songs:" + finalQuery.toLowerCase(java.util.Locale.US);
+
         exploreHint.setVisibility(android.view.View.GONE);
         recyclerViewSpotify.setVisibility(android.view.View.GONE);
         exploreLoading.setVisibility(forceRefresh ? android.view.View.GONE : android.view.View.VISIBLE);
 
         final int requestGeneration = ++searchRequestGeneration;
-        SaavnApi.searchSongs(this, finalQuery, 30, forceRefresh, new SaavnApi.SearchCallback() {
+        SaavnApi.searchSongs(this, finalQuery, currentExplorePage, ONLINE_PAGE_SIZE, forceRefresh, new SaavnApi.SearchCallback() {
             @Override
             public void onSuccess(List<SaavnTrack> tracks) {
                 if (requestGeneration != searchRequestGeneration) return;
@@ -433,6 +486,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
                 recyclerViewSpotify.setVisibility(android.view.View.VISIBLE);
                 onlineAdapter.setTracks(tracks);
                 lastLoadedExploreQuery = finalQuery;
+                hasMoreExploreResults = tracks.size() >= ONLINE_PAGE_SIZE;
                 updateSongCount();
                 
                 if (tracks.isEmpty()) {
@@ -453,6 +507,125 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
         });
     }
 
+    private void performArtistSearch(String artist) {
+        performArtistSearch(artist, false);
+    }
+
+    private void performArtistSearch(String artist, boolean forceRefresh) {
+        String finalArtist = artist == null ? "" : artist.trim();
+        if (finalArtist.isEmpty()) {
+            exploreRefresh.setRefreshing(false);
+            return;
+        }
+
+        currentExploreArtistSearch = true;
+        String artistCacheKey = "artist:" + finalArtist.toLowerCase(java.util.Locale.US);
+        if (!forceRefresh && artistCacheKey.equals(lastLoadedExploreQuery)) {
+            exploreLoading.setVisibility(android.view.View.GONE);
+            exploreRefresh.setRefreshing(false);
+            updateSongCount();
+            return;
+        }
+
+        currentExplorePage = 1;
+        hasMoreExploreResults = true;
+        isLoadingMoreExplore = false;
+        activeExploreRequestKey = artistCacheKey;
+
+        exploreHint.setVisibility(android.view.View.GONE);
+        recyclerViewSpotify.setVisibility(android.view.View.GONE);
+        exploreLoading.setVisibility(forceRefresh ? android.view.View.GONE : android.view.View.VISIBLE);
+
+        final int requestGeneration = ++searchRequestGeneration;
+        SaavnApi.searchArtistSongs(this, finalArtist, currentExplorePage, ONLINE_PAGE_SIZE, forceRefresh, new SaavnApi.SearchCallback() {
+            @Override
+            public void onSuccess(List<SaavnTrack> tracks) {
+                if (requestGeneration != searchRequestGeneration) return;
+
+                exploreLoading.setVisibility(android.view.View.GONE);
+                exploreRefresh.setRefreshing(false);
+                recyclerViewSpotify.setVisibility(android.view.View.VISIBLE);
+                onlineAdapter.setTracks(tracks);
+                lastLoadedExploreQuery = artistCacheKey;
+                hasMoreExploreResults = tracks.size() >= ONLINE_PAGE_SIZE;
+                updateSongCount();
+
+                if (tracks.isEmpty()) {
+                    exploreHint.setText("No artist songs found for '" + finalArtist + "'");
+                    exploreHint.setVisibility(android.view.View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                if (requestGeneration != searchRequestGeneration) return;
+
+                exploreLoading.setVisibility(android.view.View.GONE);
+                exploreRefresh.setRefreshing(false);
+                exploreHint.setText("Error: " + error);
+                exploreHint.setVisibility(android.view.View.VISIBLE);
+            }
+        });
+    }
+
+    private void loadMoreExploreResults() {
+        if (isLoadingMoreExplore || !hasMoreExploreResults) return;
+        if (binding.viewPager.getCurrentItem() != 0) return;
+        if (onlineAdapter == null || onlineAdapter.getItemCount() == 0) return;
+
+        String query = binding.searchEditText.getText().toString().trim();
+        if (query.isEmpty()) {
+            query = currentExploreQuery == null ? "" : currentExploreQuery.trim();
+        }
+        if (query.isEmpty()) return;
+
+        final int nextPage = currentExplorePage + 1;
+        final boolean artistSearch = currentExploreArtistSearch;
+        final int requestedLimit = artistSearch ? ONLINE_PAGE_SIZE : nextPage * ONLINE_PAGE_SIZE;
+        final String requestKey = artistSearch
+                ? "artist:" + query.toLowerCase(java.util.Locale.US)
+                : "songs:" + query.toLowerCase(java.util.Locale.US);
+
+        if (!requestKey.equals(activeExploreRequestKey)) return;
+
+        isLoadingMoreExplore = true;
+        final int requestGeneration = searchRequestGeneration;
+
+        SaavnApi.SearchCallback callback = new SaavnApi.SearchCallback() {
+            @Override
+            public void onSuccess(List<SaavnTrack> tracks) {
+                if (requestGeneration != searchRequestGeneration
+                        || !requestKey.equals(activeExploreRequestKey)) {
+                    return;
+                }
+
+                isLoadingMoreExplore = false;
+                int addedCount = onlineAdapter.appendTracks(tracks);
+                if (addedCount > 0) {
+                    currentExplorePage = nextPage;
+                }
+                hasMoreExploreResults = addedCount > 0
+                        && (artistSearch ? tracks.size() >= ONLINE_PAGE_SIZE : tracks.size() >= requestedLimit);
+                updateSongCount();
+            }
+
+            @Override
+            public void onError(String error) {
+                if (requestGeneration != searchRequestGeneration
+                        || !requestKey.equals(activeExploreRequestKey)) {
+                    return;
+                }
+                isLoadingMoreExplore = false;
+            }
+        };
+
+        if (artistSearch) {
+            SaavnApi.searchArtistSongs(this, query, nextPage, ONLINE_PAGE_SIZE, false, callback);
+        } else {
+            SaavnApi.searchSongs(this, query, requestedLimit, false, callback);
+        }
+    }
+
     private void showHistory() {
         if (binding.viewPager.getCurrentItem() != 0) return;
         if (binding.searchToolbar.getVisibility() != android.view.View.VISIBLE) return;
@@ -465,6 +638,59 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.OnIte
 
         binding.historyContainer.setVisibility(android.view.View.VISIBLE);
         searchHistoryAdapter.setHistory(history);
+    }
+
+    private void searchByArtist(String artist, boolean onlineSearch) {
+        if (artist == null) return;
+
+        String query = artist.trim();
+        if (query.isEmpty()) return;
+
+        suppressSearchTextWatcher = true;
+        binding.searchEditText.setText(query);
+        binding.searchEditText.setSelection(query.length());
+        suppressSearchTextWatcher = false;
+        binding.historyContainer.setVisibility(android.view.View.GONE);
+        updateSearchChip(query);
+
+        if (onlineSearch) {
+            currentExploreArtistSearch = true;
+            if (binding.viewPager.getCurrentItem() != 0) {
+                binding.viewPager.setCurrentItem(0, true);
+                return;
+            }
+            performArtistSearch(query);
+        } else {
+            currentExploreArtistSearch = false;
+            if (binding.viewPager.getCurrentItem() != 1) {
+                binding.viewPager.setCurrentItem(1, true);
+            }
+            localAdapter.filter(query);
+            updateSongCount();
+        }
+    }
+
+    private void handleArtistSearchIntent(Intent intent) {
+        if (intent == null || !intent.hasExtra(EXTRA_ARTIST_SEARCH)) return;
+
+        String artist = intent.getStringExtra(EXTRA_ARTIST_SEARCH);
+        boolean onlineSearch = intent.getBooleanExtra(EXTRA_ARTIST_SEARCH_ONLINE, true);
+        intent.removeExtra(EXTRA_ARTIST_SEARCH);
+        intent.removeExtra(EXTRA_ARTIST_SEARCH_ONLINE);
+        searchByArtist(artist, onlineSearch);
+    }
+
+    private void updateSearchChip(String query) {
+        if (binding == null || binding.searchedForChip == null) return;
+
+        String cleanQuery = query == null ? "" : query.trim();
+        if (cleanQuery.isEmpty()) {
+            binding.searchedForChip.setVisibility(android.view.View.GONE);
+            return;
+        }
+
+        binding.searchedForChip.setText("Searched for: " + cleanQuery);
+        binding.searchedForChip.setVisibility(android.view.View.VISIBLE);
     }
 
     private void setupMiniPlayer() {

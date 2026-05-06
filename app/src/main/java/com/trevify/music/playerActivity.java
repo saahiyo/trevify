@@ -140,6 +140,18 @@ public class playerActivity extends AppCompatActivity implements MusicPlayerMana
             playerManager.toggleRepeat();
             updateShuffleRepeatIcons();
         });
+        binding.textArtist.setOnClickListener(v -> {
+            Song currentSong = playerManager.getCurrentSong();
+            if (currentSong == null || currentSong.artist == null || currentSong.artist.trim().isEmpty()) {
+                return;
+            }
+
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.putExtra(MainActivity.EXTRA_ARTIST_SEARCH, currentSong.artist.trim());
+            intent.putExtra(MainActivity.EXTRA_ARTIST_SEARCH_ONLINE, currentSong.isOnline);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+        });
 
         binding.favBtn.setOnClickListener(v -> {
             Song currentSong = playerManager.getCurrentSong();

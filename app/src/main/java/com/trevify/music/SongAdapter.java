@@ -26,11 +26,16 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
     private List<Song> songs;
     private List<Song> fullList;
     private OnItemClickListerner listener;
+    private OnArtistClickListener artistClickListener;
     private Song playingSong;
     private int lastPosition = -1;
 
     public interface OnItemClickListerner {
         void onItemClick(int position, View view);
+    }
+
+    public interface OnArtistClickListener {
+        void onArtistClick(String artist);
     }
 
     public SongAdapter(List<Song> songs, OnItemClickListerner listener) {
@@ -43,6 +48,10 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         this.songs = songs;
         this.fullList = new ArrayList<>(songs);
         notifyDataSetChanged();
+    }
+
+    public void setOnArtistClickListener(OnArtistClickListener listener) {
+        this.artistClickListener = listener;
     }
 
     public void filter(String query) {
@@ -106,6 +115,20 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewholder
         Song song=songs.get(position);
         holder.binding.textTitle.setText(song.title);
         holder.binding.textArtist.setText(song.artist + " • " + formatTime((int)(song.duration/1000)));
+
+        if (artistClickListener != null) {
+            holder.binding.textArtist.setOnClickListener(v -> {
+                if (song.artist == null) return;
+
+                String artist = song.artist.trim();
+                if (!artist.isEmpty()) {
+                    artistClickListener.onArtistClick(artist);
+                }
+            });
+        } else {
+            holder.binding.textArtist.setOnClickListener(null);
+            holder.binding.textArtist.setClickable(false);
+        }
 
         Object imageSource;
         if (song.isOnline && song.albumArtUrl != null && !song.albumArtUrl.isEmpty()) {
